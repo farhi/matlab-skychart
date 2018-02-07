@@ -1,14 +1,77 @@
-function skychart
+classdef skychart < handle
 
-  % plot a sky chart with stars/objects at coordinates RA,DEC
+  % SKYCHART: a class to plot a sky chart with stars/objects
   %
   % Credits:
-  %   Eran O. Ofek, using version Mar 2004 GPL3
-  %   URL : http://weizmann.ac.il/home/eofek/matlab/
-  % using:    julday, convertdms, refraction, 
-  %           pr_stereographic_polar, horiz_coo
+  % E. Ofek     MAAT            GPL3 2004
+  %   http://weizmann.ac.il/home/eofek/matlab/ 
+  % F. Glineur  parse_json      BSD  2009
+  %   https://fr.mathworks.com/matlabcentral/fileexchange/23393--another--json-parser
   
-  persistent constellations stars deepskyobjects
+  properties
+  
+    catalogs  = {};   % contains data bases as a cell of struct
+    date      = [];   % UTC
+    place     = [];   % [ long lat in deg ]
+    julianday = 0;
+    
+  end % properties
+  
+  methods
+    function skychart
+    end
+
+    function plot
+    end
+
+    function update
+    end
+   
+    function getplace(self, sb)
+      % getplace(sc): get the location
+      % getplace(sc, [lon lat]): set location in deg
+      % getplace(sc, starbook): set location from StarBook
+      if nargin && isa(sb, 'starbook')
+        p = sb.place;
+        e = double(p{2})+double(p{3})/60;
+        if p{1} == 'W', e=-e; end
+        n = double(p{5})+double(p{6})/60;
+        if p{4} == 'S', n=-n; end
+        self.place = [ n e ];
+        disp([ mfilename ': Using location from Vixen StarBook [long lat]=' num2str(self.place) ]);
+      elseif isnumeric(sb) && numel(sb) == 2
+        self.place = sb;
+      else % use ip-api to get the location from the IP
+        try
+          % could also use: https://api.ipdata.co/
+          ip = urlread('http://ip-api.com/json');
+          ip = parse_json(ip);  % into struct (private)
+          self.place = [ ip.lon ip.lat ];
+          disp([ mfilename ': Your are located in ' ip.city ' ' ip.country ' [long lat]=' num2str(self.place) ]);
+        catch
+          self.place = [ 45.26 5.45 ];
+        end
+      end
+   end
+   
+   function gettime(self, sb)
+     if nargin && isa(sb, 'starbook')
+     elseif nargin
+       self.date = datestr(sb);
+     else
+       self.date = local_time_to_utc(now); % in private
+       % could also use http://www.convert-unix-time.com/api?timestamp=now
+     end
+   end
+   
+   function getstatus
+   end
+   
+   
+  end % methods
+  
+end % skychart
+  
   
   if isempty(constellations)
     % load: constellations stars deepskyobjects
@@ -243,6 +306,7 @@ function [X,Y, RestCol, Iabove] = coo2xy(CooData,JD,GeodPos);
   % calculate the x,y, position in sterographic polar projection
   % and return [X, Y, Rest of colums] for objects found
   % above the horizon
+  % Eran O. Ofek http://weizmann.ac.il/home/eofek/matlab/
   %--------------------------------------------------------
   AltLimit          = 0;
   HorizCoo          = horiz_coo(CooData(:,1:2),JD,GeodPos,'h');
