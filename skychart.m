@@ -10,28 +10,91 @@ classdef skychart < handle
   
   properties
   
-    catalogs  = {};   % contains data bases as a cell of struct
-    date      = [];   % UTC
-    place     = [];   % [ long lat in deg ]
+    catalogs  = {};       % contains data bases as a cell of struct
+    utc       = [];       % UTC
+    place     = [];       % [ long lat in deg ]
     julianday = 0;
+    update_time = 0;      % local time of last computation
+    update_period = 120;  % in seconds
+    figure    = 0;
+    telescope = [];
+    visibility=[];        % a polygon area in the X,Y coordinates (defined by user)
+    xlim      =[-1 1];
+    ylim      =[-1 1];
+    mlim      = 8;        % magnitude limit
+    
+    % catalogs is a struct of single catalog entries.
+    % Each named catalog entry has fields:
+    %  RA:    Right Ascension in deg
+    %  DEC:   Declinaison in deg
+    %  DIST:  Distance Mpc for objects, pc for stars
+    %  MAG:   Visual magnitude
+    %  TYPE:  star (O B A F G K M), planet, galaxy, open cluster, ...
+    %  NAME:  Usual name; Can be a cellstr or string
+    %  SIZE:  Visual size, X or [X Y], 0 for stars
+    %  Description: Name and source of catalog
+    %
+    % Then, at compute, the catalogs are enriched with:
+    %  Alt:   Altitude
+    %  Az:    Azimuth
+    %  X
+    %  Y
+    %  julianday: the Julian Day used for last computation
+    %  visible = (X in xlim, Y in ylim, Alt > 0 and Alt,Az inpolygon(user))
+    %
+    % We use: catalogs = struct(stars, deepskyobjects, planets)
     
   end % properties
   
   methods
-    function skychart
+    function sc = skychart(telescope)
+      
+      % load catalogs
+      load(sc);
+      
+      % populate with starting stuff
+      getplace(sc);
+      % connect to telesqcope (StarBook)
+      if nargin
+        sc.telescope = telescope;
+      end
+      
+      % update all and compute Alt/Az, X/Y coordinates
+      compute(sc);
+      
+      
+      
+      % plot the sky view
+      % sc.figure = plot(sc);
     end
-
-    function plot
-    end
-
-    function update
+    
+    function load(self)
+      % load catalogs: objects, stars
+      disp([ mfilename ': Welcome ! Loading Catalogs:' ]);
+      self.catalogs = load(mfilename);
+      
+      % create planet catalog with empty coordinates
+      self.catalogs.planets = struct('Description','Planets','RA',[]);
+      
+      % display available catalogs
+      for f=fieldnames(self.catalogs)'
+        name = f{1};
+        if ~isempty(self.catalogs.(name))
+          num  = numel(self.catalogs.(name).RA);
+          if isfield(self.catalogs.(name), 'Description')
+            desc = self.catalogs.(name).Description;
+          else desc = ''; end
+          disp([ mfilename ': ' name ' with ' num2str(num) ' entries.' ]);
+          disp([ '  ' desc ])
+        end
+      end
     end
    
     function getplace(self, sb)
       % getplace(sc): get the location
       % getplace(sc, [lon lat]): set location in deg
       % getplace(sc, starbook): set location from StarBook
-      if nargin && isa(sb, 'starbook')
+      if nargin > 1 && isa(sb, 'starbook')
         p = sb.place;
         e = double(p{2})+double(p{3})/60;
         if p{1} == 'W', e=-e; end
@@ -39,7 +102,7 @@ classdef skychart < handle
         if p{4} == 'S', n=-n; end
         self.place = [ n e ];
         disp([ mfilename ': Using location from Vixen StarBook [long lat]=' num2str(self.place) ]);
-      elseif isnumeric(sb) && numel(sb) == 2
+      elseif nargin > 1 && isnumeric(sb) && numel(sb) == 2
         self.place = sb;
       else % use ip-api to get the location from the IP
         try
@@ -52,243 +115,83 @@ classdef skychart < handle
           self.place = [ 45.26 5.45 ];
         end
       end
-   end
+    end
    
-   function gettime(self, sb)
-     if nargin && isa(sb, 'starbook')
-     elseif nargin
-       self.date = datestr(sb);
-     else
-       self.date = local_time_to_utc(now); % in private
-       % could also use http://www.convert-unix-time.com/api?timestamp=now
-     end
-   end
-   
-   function getstatus
-   end
-   
+    function d=date(self, utc)
+      % date(sc):      get the current UTC
+      % date(sc, UTC): sets the date as given UTC
+      if nargin > 1 && ~isempty(utc)
+        self.utc = utc;
+      else
+        self.utc = local_time_to_utc(now); % in private, uses Java
+        % could also use http://www.convert-unix-time.com/api?timestamp=now
+      end
+      % compute the Julian Day
+      self.julianday = skychart_julianday(datenum(self.utc));
+     
+      d = self.utc;
+    end
+    
+    function compute(self, utc)
+      % compute(sc): compute and update all catalogs
+      
+      if nargin < 2, utc = []; end
+    
+      self.date(utc); % get UTC
+      
+      % compute RA/DEC for planets
+      % self.catalogs.planets = compute_planets(self.julianday, self.place);
+      
+      % catalogs -> store new stereographic polar coordinates and update time.
+      for f=fieldnames(self.catalogs)'
+        % update all valid catalogs
+        catalog = self.catalogs.(f{1});
+        if isempty(catalog) || ~isfield(catalog, 'RA') || isempty(catalog.RA)
+          continue;
+        end
+        
+        % do we need to compute/update ?
+        if isfield(catalog,'julianday') && ...
+          abs(self.julianday - catalog.julianday) < self.update_period/3600/24
+          continue; % no need to update
+        end
+        
+        % compute the horizontal coordinates (Alt-Az)
+        [catalog.Az, catalog.Alt] = radec2altaz(catalog.RA, catalog.DEC, ...
+          self.julianday, self.place);
+        % compute the stereographic polar coordinates
+        d2r = pi/180;
+        [catalog.X, catalog.Y]    = pr_stereographic_polar( ...
+          (catalog.Az(:)+90)*d2r, (90-catalog.Alt(:))*d2r);
+          
+        % special case for constellations: compute lines for patterns
+        if strcmp(f{1}, 'constellations')
+          catalog = compute_constellations(catalog, ...
+            self.julianday, self.place);
+        end
+          
+        % update catalog
+        catalog.julianday = self.julianday;
+        self.catalogs.(f{1}) = catalog;
+        
+        
+      end
+      
+      self.update_time = self.julianday;
+    end
+    
+    function plot(self)
+      plot_frame(self.date);
+      plot_constellations(self.catalogs.constellations);
+    end
    
   end % methods
   
 end % skychart
-  
-  
-  if isempty(constellations)
-    % load: constellations stars deepskyobjects
-    load skychart
-  end
-  
-  %check/convert input
-  
-  %if Place not given:
-  %   get it  from: 'starbook.getplace'
-  %   get it  from: http://ip-api.com/json
-  %   lat/long in degrees
-  
-  % separate computation from display
-  % store alt-az coordinates, time of computation,
-  %   and visible state in database struct
-  
-  Date        = now;
-  Place       = [35 32 0]*pi/180;
-  
-  % plot all stuff
-  JD          = skychart_julianday(Date);
-  
-  h = skychart_frame(datestr(Date)); hold on;  % get figure handle
-  
-  skychart_constellations(constellations, JD,Place);  % lines and names
-  
-  skychart_planets(JD,Place);                  % filled symbols and names
 
-  % stars
-  options.color   = 'w';
-  options.filled  = 'filled';
-  options.MAG_max = 10;
-  skychart_stars(stars,          JD,Place, options);    % filled symbols 
-  
-  % deep sky objects
-  options.color   = 'b';
-  options.filled  = 'open';
-  options.MAG_max = 10;
-  skychart_dso(deepskyobjects, JD,Place, options);    % open symbols
-  
-end % skychart
-  
-  
-% ==============================================================================
-  
-function h = skychart_frame(Date)
-
-  h = findobj('Tag','SkyChart');
-  if isempty(h)
-    h = figure('Tag','SkyChart', 'Name', [ 'SkyChart: ' datestr(Date) ]);
-      
-    %--- Horizon ---
-    Theta = (0:5:360)';
-    X     = cosd(Theta);
-    Y     = sind(Theta);
-    plot(X,Y,'LineWidth',3); title(Date); axis tight
-
-    %--- Plot N/E/S/W ---
-    Offset = 0.02;
-    Letter = 0.05;
-    text(0,                1+Offset,       'N', 'Color','b');
-    text(-1-Offset-Letter, 0,              'E', 'Color','b');
-    text(0,               -1-Offset-Letter,'S', 'Color','b');
-    text(1+Offset,         0,              'W', 'Color','b');
-    set(gca,'XTick',[],'YTick',[], 'Color','k');
-  else figure(h);
-  end
-
-end % skychart_frame
-  
-function skychart_constellations(constellations, JD,GeodPos)
-
-  AltLimit = 0;
-  %--- Plot Constellations Lines ---
-  CL_HorizCoo1 = horiz_coo([constellations.Lines_RA1, constellations.Lines_DEC1], ...
-                           JD,GeodPos,'h');
-  CL_HorizCoo2 = horiz_coo([constellations.Lines_RA2, constellations.Lines_DEC2], ...
-                           JD,GeodPos,'h');
-  % add refraction
-  CL_HorizCoo1(:,2) = CL_HorizCoo1(:,2) + refraction(CL_HorizCoo1(:,2));
-  CL_HorizCoo2(:,2) = CL_HorizCoo2(:,2) + refraction(CL_HorizCoo2(:,2));
-  I            = find(CL_HorizCoo1(:,2)>AltLimit ...
-                    | CL_HorizCoo2(:,2)>AltLimit);
-  CL_HorizCat1 = [CL_HorizCoo1(I,1)+pi./2, pi./2-CL_HorizCoo1(I,2)];
-  CL_HorizCat2 = [CL_HorizCoo2(I,1)+pi./2, pi./2-CL_HorizCoo2(I,2)];
-  [X1,Y1]      = pr_stereographic_polar(CL_HorizCat1(:,1),CL_HorizCat1(:,2));
-  [X2,Y2]      = pr_stereographic_polar(CL_HorizCat2(:,1),CL_HorizCat2(:,2));
-
-  N_CL = length(I);
-  for Icl=1:1:N_CL,
-     Hcl = plot([X1(Icl);X2(Icl)],[Y1(Icl);Y2(Icl)],'-');
-     set(Hcl,'Color','g','LineWidth',1);
-  end
-
-  %--- Plot Constellation Names ---
-  [X,Y, RestCol, visible] = coo2xy([constellations.RA, constellations.DEC, ...
-                          [1:1:length(constellations.RA)]' ], JD,GeodPos);
-  N_CN   = length(X);
-  for Icn=1:1:N_CN,
-     Htext = text(X(Icn),Y(Icn), constellations.Name{RestCol(Icn)});
-     set(Htext,'FontSize',8,'Color','g')
-  end
-
-end % skychart_constellations
-  
-function skychart_planets(JD,GeodPos)
-  PlCoo    = zeros(0,3);
-  % magnitude of objects -> size
-  MagFun   = [-30 12;...
-             -5 10;...
-              0 8.5;...
-              1 6.5;...
-              2 4;...
-              3 3;...
-              4 2;...
-              5 1;...
-              9 1];
-  Labels = {'Sun','Moon','Mercury','Venus','Mars', ...
-            'Jupiter','Saturn','Uranus','Neptune'};
-  for index=Labels
-    PlCoo = '';
-    switch index{1}
-    case 'Sun'
-      [SunRA, SunDec]  = suncoo(JD,'a');
-      PlCoo            = [SunRA, SunDec, ones(length(SunRA),1).*-26];
-    case 'Moon'
-      [MoonRA,MoonDec] = mooncool(JD,GeodPos,'b');
-      PlCoo            = [MoonRA, MoonDec, ones(length(MoonRA),1).*-5]; 
-    case 'Mercury'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Mercury','Earth','SphericEq','date');
-    case 'Venus'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Venus','Earth','SphericEq','date');
-    case 'Mars'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Mars','Earth','SphericEq','date');
-    case 'Jupiter'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Jupiter','Earth','SphericEq','date');
-    case 'Saturn'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Saturn','Earth','SphericEq','date');
-    case 'Uranus'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Uranus','Earth','SphericEq','date');
-    case 'Neptune'
-      [Coo,Dist,Ang,Mag] = planet_lowephem(JD,'Neptune','Earth','SphericEq','date');
-    end
-    if isempty(PlCoo)
-      PlCoo              = [Coo(:,1:2), Mag(:,1)];
-    end
-    %--- convert to horizontal coordinates in the map epoch! ---
-    [X,Y, RestCol] = coo2xy(PlCoo,JD,GeodPos);
-
-    % plot planets
-    if ~isempty(X)
-      MagMarkSize = interp1(MagFun(:,1),MagFun(:,2),RestCol(:,1),'linear');
-      Hpl         = plot(X,Y,'LineStyle','-','Marker','o', ...
-        'MarkerFaceColor','r','MarkerEdgeColor','r','Color','r',...
-        'MarkerSize',mean(MagMarkSize));
-      text(X,Y,0, index{1},'Color','r');
-    end
-  end
-
-end % skychart_planets
-
-function skychart_stars(RA_DEC_MAG, JD,Place, options)
-
-  if nargin < 4, options = ''; end
-  if ~isfield(options, 'color'),  options.color  = 'w';    end
-  if ~isfield(options, 'filled'), options.filled = 'open'; end
-  if ~isfield(options, 'MAG_max'),options.MAG_max= 6;end
-  
-  RA  = RA_DEC_MAG.RA *2*pi/24;
-  DEC = RA_DEC_MAG.DEC*pi/180;
-  MAG = RA_DEC_MAG.MAG;
-  
-  [X,Y, ~, visible] = coo2xy([RA(:) DEC(:)], JD,Place);
-
-  % make a symbol size with magnitude
-  % mag= MAG_max      -> 0
-  % mag =min(MAG)     -> 10
-  MAG = MAG(visible);
-  SZ       = 10-MAG+min(MAG); % from 10 down ...
-  SZ(SZ<1) = 1;
-  toplot = find(MAG<options.MAG_max);
-  SZ=SZ.^2;
-  
-  if strcmp(options.filled, 'filled')
-    scatter(X(toplot),Y(toplot), SZ(toplot), options.color, 'filled');
-  else
-    scatter(X(toplot),Y(toplot), SZ(toplot), options.color);
-  end
-  
-end % skychart_stars
-
-function skychart_dso(RA_DEC_MAG, JD,Place, options)
-
-  if nargin < 4, options = ''; end
-  if ~isfield(options, 'color'),  options.color  = 'w';    end
-  if ~isfield(options, 'filled'), options.filled = 'open'; end
-  
-  RA  = RA_DEC_MAG.RA;
-  DEC = RA_DEC_MAG.DEC;
-  MAG = RA_DEC_MAG.MAG;
-  SZ  = RA_DEC_MAG.SIZE;
-  
-  [X,Y, ~, visible] = coo2xy([RA(:) DEC(:)], JD,Place);
-  
-  if strcmp(options.filled, 'filled')
-    scatter(X,Y, SZ, options.color, 'filled');
-  else
-    scatter(X,Y, SZ, options.color);
-  end
-  
-end % skychart_dso
-
-function skychart_objects(RA,DEC,SZ, JD,Place, color)
-  skychart_stars(RA,DEC, -SZ, JD,Place, 'c', 'circle');
-end
-% ==============================================================================
+% ------------------------------------------------------------------------------
+% private functions
+% ------------------------------------------------------------------------------
 
 function JD = skychart_julianday(d)
   % depends: julday, convertdms
@@ -299,29 +202,31 @@ function JD = skychart_julianday(d)
   Frac = convertdms(Date(:,4:6),'H','f');
   JD   = julday([Date(:,1:3), Frac]);
 end % skychart_julianday
+
+function [Az Alt] = radec2altaz(RA,DEC, julianday, place)
+  % radec2altaz: convert RA/DEC coordinates to horizontal frame
+  %
+  % [az,alt] = radec2altaz(ra, dec, julianday, place): compute the Alt Az 
+  %   (horizontal coordinates) from the RA DEC ones, all in [deg].
+  %
+  % DEC is the      'height' respective to North pole
+  % Altitude is the 'height' respective to Zenith
+  %
+  % uses: horiz_coo, refraction (MAAT by Ofek)
   
-function [X,Y, RestCol, Iabove] = coo2xy(CooData,JD,GeodPos);
-  %--------------------------------------------------------
-  % Given [RA, Dec, additional columns]
-  % calculate the x,y, position in sterographic polar projection
-  % and return [X, Y, Rest of colums] for objects found
-  % above the horizon
+  d2r = pi/180;
+  r2d = 1/d2r;
+
+  % taken from MAAT: horiz_coo and refraction (take [rad])
   % Eran O. Ofek http://weizmann.ac.il/home/eofek/matlab/
-  %--------------------------------------------------------
-  AltLimit          = 0;
-  HorizCoo          = horiz_coo(CooData(:,1:2),JD,GeodPos,'h');
+  HorizCoo          = horiz_coo([ RA(:) DEC(:) ]*d2r, ...
+    julianday, place*d2r, 'h');
   HorizCoo(:,2)     = HorizCoo(:,2) + refraction(HorizCoo(:,2));
-  Iabove            = find(HorizCoo(:,2)>AltLimit);
-  HorizCoo          = HorizCoo(Iabove,:);
-  if (size(CooData,2)>2),
-     RestCol        = CooData(Iabove,3:end);
-  else
-     RestCol        = [];
-  end
-  N_data            = size(HorizCoo,1);
-  HorizCat          = [HorizCoo(:,1)+pi./2, pi./2-HorizCoo(:,2), ones(N_data,2)];
-  [X,Y]             = pr_stereographic_polar(HorizCat(:,1), HorizCat(:,2));
-end % coo2xy
+  HorizCoo          = HorizCoo*r2d;
+  Az                = HorizCoo(:,1);
+  Alt               = HorizCoo(:,2); % > 0 when visible
+
+end % radec2altaz
 
 function [X,Y]=pr_stereographic_polar(Az,ZenithDist);
 %------------------------------------------------------------------------------
@@ -342,3 +247,73 @@ function [X,Y]=pr_stereographic_polar(Az,ZenithDist);
   Y     = sin(Az).*tan(0.5.*ZenithDist);
 end % pr_stereographic_polar
 
+function constellations = compute_constellations(constellations, julianday, place)
+
+  % compute Alt-Az of constellation lines (pairs)
+  [constellations.Lines_Az1, constellations.Lines_Alt1] = radec2altaz( ...
+    constellations.Lines_RA1, constellations.Lines_DEC1, ...
+    julianday, place);
+  [constellations.Lines_Az2, constellations.Lines_Alt2] = radec2altaz( ...
+    constellations.Lines_RA2, constellations.Lines_DEC2, ...
+    julianday, place);
+  
+  d2r = pi/180;
+  [constellations.X1, constellations.Y1]     = pr_stereographic_polar( ...
+          (constellations.Lines_Az1+90)*d2r, (90-constellations.Lines_Alt1)*d2r);
+  [constellations.X2, constellations.Y2]     = pr_stereographic_polar( ...
+          (constellations.Lines_Az2+90)*d2r, (90-constellations.Lines_Alt2)*d2r);
+          
+end % compute_constellations
+
+
+function constellations = plot_constellations(constellations)
+
+  
+  % identify the visible Constellations and plot
+  v            = find(constellations.Lines_Alt1>0 ...
+                    | constellations.Lines_Alt2>0);
+  
+  X1 = constellations.X1(v);
+  X2 = constellations.X2(v);
+  Y1 = constellations.Y1(v);
+  Y2 = constellations.Y2(v);
+  hold on
+  
+  X = nan*ones(numel(X1)*3, 1); Y=X;
+  X(1:3:(end-2)) = X1; X(2:3:(end-1)) = X2; 
+  Y(1:3:(end-2)) = Y1; Y(2:3:(end-1)) = Y2; 
+  line(X,Y, 'Color','g','LineWidth',1);
+
+  %--- Plot Constellation Names ---
+  for Icn=1:1:length(constellations.X)
+     Htext = text(constellations.X(Icn),constellations.Y(Icn), ...
+       constellations.Name{Icn});
+     set(Htext,'FontSize',8,'Color','g');
+  end
+
+end % plot_constellations
+
+function h = plot_frame(Date)
+
+  h = findobj('Tag','SkyChart');
+  if isempty(h)
+    h = figure('Tag','SkyChart', 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
+      
+    %--- Horizon ---
+    Theta = (0:5:360)';
+    X     = cosd(Theta);
+    Y     = sind(Theta);
+    plot(X,Y,'LineWidth',3); title([ datestr(Date) ' (UTC)' ]); axis tight
+
+    %--- Plot N/E/S/W ---
+    Offset = 0.02;
+    Letter = 0.05;
+    text(0,                1+Offset,       'N', 'Color','b');
+    text(-1-Offset-Letter, 0,              'E', 'Color','b');
+    text(0,               -1-Offset-Letter,'S', 'Color','b');
+    text(1+Offset,         0,              'W', 'Color','b');
+    set(gca,'XTick',[],'YTick',[], 'Color','k');
+  else figure(h);
+  end
+
+end % plot_frame
