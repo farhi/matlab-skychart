@@ -205,8 +205,9 @@ classdef skychart < handle
       self.ylim = yl;
 
       % plot catalogs, restricting to magnitude and xlim/ylim
-      self.handles = [ self.handles ...
-                       plot_catalogs(self.catalogs, self.xlim, self.ylim) ];
+      [handles, self.catalogs] = ...
+                       plot_catalogs(self.catalogs, self.xlim, self.ylim);
+      self.handles = [ self.handles handles ];
       if new, plot_legend; end
     end
    
@@ -366,6 +367,8 @@ function [h,x,y,new] = plot_frame(Date, sc)
       'Callback', 'printdlg(gcbf)');  
     uimenu(m, 'Label', 'Update All',  'Separator','on', ...
       'Callback', @MenuCallback, 'Accelerator','u');
+    % set callback for mouse click on e.g. objects
+    set(gca, 'ButtonDownFcn',        @ButtonDownCallback);
   else
     set(0,'CurrentFigure', h); % select but not raise
     set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
@@ -457,7 +460,7 @@ function planets = compute_planets(planets, julianday, place)
   
 end % compute_planets
 
-function handles = plot_catalogs(catalogs, xl, yl)
+function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
   % plot_catalogs(catalogs, xl, yl): plot all visible objects from the catalog
   %
   handles = [];
@@ -478,8 +481,10 @@ function handles = plot_catalogs(catalogs, xl, yl)
     visible = (catalog.X.^2+catalog.Y.^2 < 1 ...
             & min(xl) < catalog.X & catalog.X < max(xl) ...
             & min(yl) < catalog.Y & catalog.Y < max(yl) ...
-            & catalog.MAG(:) < mag_max);
+            & catalog.MAG(:) & catalog.MAG(:) < mag_max);
 
+    catalog.visible = visible; % store it as visible state
+    
     mag = catalog.MAG(visible);
     x   = catalog.X(visible);
     y   = catalog.Y(visible);
@@ -492,6 +497,7 @@ function handles = plot_catalogs(catalogs, xl, yl)
 
     % when out user-inpolygon, color is scaled down (grayed_out) / 2
     
+    % scatter plots: o,ly the 'circle' can have non-uniform size
     switch f{1}
     case 'planets'
       % for planets: show name
@@ -506,13 +512,16 @@ function handles = plot_catalogs(catalogs, xl, yl)
     case 'deep_sky_objects'
       % for DSO, when proper name, show it
       % For dso,   use circle        (scatter) with thickness=Magnitude, and given size
-      h = scatter(x,y, markersize(mag).^(factor), colour(typ), 'o');
+      h = scatter(x,y, markersize(mag).^(2*factor), colour(typ), 'o');
       
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
     end
-    set(h, 'Tag', [ 'SkyChart_' f{1} ]);
+    set(h, 'Tag', [ 'SkyChart_' f{1} ], 'ButtonDownFcn', @ButtonDownCallback, ...
+      'UserData', f{1});
     handles = [ handles h ];
+    
+    catalogs.(f{1}) = catalog;
   end
   
 end % plot_catalogs
@@ -565,9 +574,9 @@ function legend_h = plot_legend
     'Constellations', 'g.-'; ...
     'Planets',        'r0 '; ...
     'Stars',          'c0 '; ...
-    'Galaxies',       'rs '; ...
-    'Clusters',       'bs '; ...
-    'Nebulae',        'gs '};
+    'Galaxies',       'ro '; ...
+    'Clusters',       'bo '; ...
+    'Nebulae',        'go '};
     
   % we create fake plots and the corresponding legend
   handles = [];
@@ -599,6 +608,45 @@ function MenuCallback(src, evnt)
   case 'update'
     compute(sc,'force');
     plot(sc, 1);
+  case 'find'
+    % find an object from its name 
   end
 end % MenuCallback
+
+function ButtonDownCallback(src, evnt)
+  % ButtonDownCallback: callback when user clicks on the StarBook image
+
+  % where the mouse click is
+  xy = get(gca, 'CurrentPoint'); 
+  x = xy(1,1); y = xy(1,2);
   
+  % get the SkyChart object handle
+  self=get(gcf, 'UserData');
+  
+  % search for closest object in all catalogs
+  found.dist=inf; found.catalog=''; ; found.index=[];
+  for f=fieldnames(self.catalogs)'
+    catalog = self.catalogs.(f{1});
+    if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
+    % compute distance to closest X/Y object in that catalog
+    dist = (catalog.X - x).^2 + (catalog.Y - y).^2;
+    if isfield(catalog, 'visible')
+      dist(~catalog.visible) = inf;
+    end
+    [dist_min, dist_index] = min(dist(:));
+    % check if that guess is closer than previous guess
+    if dist_min < found.dist
+      found.dist    = dist_min;
+      found.catalog = f{1};
+      found.index   = dist_index;
+    end
+  end
+  % display our findings
+  catalog = self.catalogs.(found.catalog);
+  index   = found.index;
+  fprintf(1, '%s: RA=%f DEC=%f MAG=%f TYPE=%s NAME=%s\n', ...
+    found.catalog, catalog.RA(index), catalog.DEC(index), ...
+    catalog.MAG(index), catalog.TYPE{index}, catalog.NAME{index});
+  
+end
+
