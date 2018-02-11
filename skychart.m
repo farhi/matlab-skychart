@@ -19,9 +19,9 @@ classdef skychart < handle
     figure    = 0;
     handles   = [];       % handles of the view to delete when updating the plot
     telescope = [];
-    visibility=[];        % a polygon area in the X,Y coordinates (defined by user)
-    xlim      =[0 0];
-    ylim      =[0 0];
+    visibility= [];       % a polygon area in the X,Y coordinates (defined by user)
+    xlim      = [0 0];
+    ylim      = [0 0];
     
     % catalogs is a struct of single catalog entries.
     % Each named catalog entry has fields:
@@ -136,6 +136,8 @@ classdef skychart < handle
       
       if nargin < 2, utc = []; end
     
+      if strcmp(utc,'force') force = true; utc = [];
+      else force = false; end
       self.date(utc); % set UTC
       
       % catalogs -> store new stereographic polar coordinates and update time.
@@ -147,7 +149,7 @@ classdef skychart < handle
         end
         
         % do we need to compute/update ?
-        if isfield(catalog,'julianday') && ...
+        if isfield(catalog,'julianday') && ~force && ...
           abs(self.julianday - catalog.julianday) < self.update_period/3600/24
           continue; % no need to update
         end
@@ -186,7 +188,7 @@ classdef skychart < handle
       if ~ishandle(self.figure), force=true; end
       
       % create or get current figure.
-      [self.figure, xl, yl] = plot_frame(self.date);
+      [self.figure, xl, yl, new] = plot_frame(self.date, self);
       h  = self.figure;
 
       % only plot if the figure was closed, or zoom/visible area has changed
@@ -205,19 +207,26 @@ classdef skychart < handle
       % plot catalogs, restricting to magnitude and xlim/ylim
       self.handles = [ self.handles ...
                        plot_catalogs(self.catalogs, self.xlim, self.ylim) ];
-      
+      if new, plot_legend; end
     end
    
   end % methods
   
 end % skychart
 
+
+
+
+
+
+
+
 % ------------------------------------------------------------------------------
 % private functions
 % ------------------------------------------------------------------------------
 
 function JD = skychart_julianday(d)
-  % depends: julday, convertdms
+  % depends: julday, convertdms from MAAT
   if ischar(d)
     d = datenum(d); % make it a number
   end
@@ -291,8 +300,6 @@ function constellations = compute_constellations(constellations, julianday, plac
           
 end % compute_constellations
 
-
-
 function handles = plot_constellations(constellations)
   % plot_constellations: plot constellation lines and labels
   
@@ -322,12 +329,14 @@ function handles = plot_constellations(constellations)
 
 end % plot_constellations
 
-function [h,x,y] = plot_frame(Date)
+function [h,x,y,new] = plot_frame(Date, sc)
   % plot_frame: plot the chart frame (horizon), return the handle and x/y limits
 
   h = findobj('Tag','SkyChart');
   if isempty(h)
-    h = figure('Tag','SkyChart', 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
+    h = figure('Tag','SkyChart', ...
+      'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ], ...
+      'MenuBar','none', 'ToolBar','figure');
       
     %--- Horizon ---
     Theta = (0:5:360)';
@@ -343,9 +352,24 @@ function [h,x,y] = plot_frame(Date)
     text(0,               -1-Offset-Letter,'S', 'Color','b');
     text(1+Offset,         0,              'W', 'Color','b');
     set(gca,'XTick',[],'YTick',[], 'Color','k');
+    new = true;
+    % now create some menu entries
+    set(h, 'UserData', sc); % store the skychart handle in the figure
+    m = uimenu(h, 'Label', 'SkyChart');
+    uimenu(m, 'Label', 'Close',        ...
+      'Callback', 'filemenufcn(gcbf,''FileClose'')','Accelerator','w');
+    uimenu(m, 'Label', 'Save',        ...
+      'Callback', 'filemenufcn(gcbf,''FileSave'')','Accelerator','s');
+    uimenu(m, 'Label', 'Save As...',        ...
+      'Callback', 'filemenufcn(gcbf,''FileSaveAs'')');
+    uimenu(m, 'Label', 'Print',        ...
+      'Callback', 'printdlg(gcbf)');  
+    uimenu(m, 'Label', 'Update All',  'Separator','on', ...
+      'Callback', @MenuCallback, 'Accelerator','u');
   else
     set(0,'CurrentFigure', h); % select but not raise
     set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
+    new = false;
   end
   x = xlim(gca);
   y = ylim(gca);
@@ -449,7 +473,7 @@ function handles = plot_catalogs(catalogs, xl, yl)
     if ~isfield(catalog, 'MAG'), continue; end
     
     % limit magnitude to show, so that we only have 1000 objects max
-    mag_max = abs(2.5*log10(abs(4/diff(xl)/diff(yl))))+6;
+    mag_max = abs(2.5*log10(abs(4/diff(xl)/diff(yl))))+5;
     
     visible = (catalog.X.^2+catalog.Y.^2 < 1 ...
             & min(xl) < catalog.X & catalog.X < max(xl) ...
@@ -482,7 +506,7 @@ function handles = plot_catalogs(catalogs, xl, yl)
     case 'deep_sky_objects'
       % for DSO, when proper name, show it
       % For dso,   use circle        (scatter) with thickness=Magnitude, and given size
-      h = scatter(x,y, markersize(mag).^(1.5*factor), colour(typ), 's');
+      h = scatter(x,y, markersize(mag).^(factor), colour(typ), 'o');
       
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
@@ -499,9 +523,10 @@ function m = markersize(mag)
   m = log(13-mag)*3+1;
   m(mag>=13) = 1;
   m = ceil(abs(m));
-end
+end % markersize
 
 function c = colour(typ)
+  % colour: determine the colour of objects for scatter3
   c = ones(numel(typ),3);  % initialise to white
   
   tokens = { 'star O',  [ 0 0   1 ]; ...
@@ -532,4 +557,48 @@ function c = colour(typ)
     ok  = strncmp(typ, tok, numel(tok));
     c(ok,1) = col(1); c(ok,2) = col(2); c(ok,3) = col(3);
   end
-end
+end % colour
+
+function legend_h = plot_legend
+  % plot_legend: create a legend for object categories
+  types = { ...
+    'Constellations', 'g.-'; ...
+    'Planets',        'r0 '; ...
+    'Stars',          'c0 '; ...
+    'Galaxies',       'rs '; ...
+    'Clusters',       'bs '; ...
+    'Nebulae',        'gs '};
+    
+  % we create fake plots and the corresponding legend
+  handles = [];
+  for index=1:size(types,1)
+    this = types{index,2};
+    h = plot(1,1, 'Color', this(1));
+    if this(2) == '0'
+      set(h, 'Marker', 'o', 'MarkerFaceColor', this(1));
+    else set(h, 'Marker', this(2)); end
+    if this(3) ~= ' '
+      set(h, 'LineStyle', this(3)); 
+    else set(h, 'LineStyle', 'none'); end
+    handles = [ handles h ];
+    set(h, 'DisplayName', types{index,1});
+  end
+  % populate the legend
+  legend_h = legend(handles);
+  set(legend_h, 'TextColor','w','Color','none','Tag','SkyChart_legend');
+ 
+  
+end % plot_legend
+
+function MenuCallback(src, evnt)
+  % MenuCallback: execute callback from menu.
+  %   the action depends on the src Label (uimenu)
+  sc = get(gcf,'UserData');
+  
+  switch lower(strtok(get(src, 'Label')))
+  case 'update'
+    compute(sc,'force');
+    plot(sc, 1);
+  end
+end % MenuCallback
+  
