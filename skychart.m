@@ -20,8 +20,8 @@ classdef skychart < handle
     handles   = [];       % handles of the view to delete when updating the plot
     telescope = [];
     visibility=[];        % a polygon area in the X,Y coordinates (defined by user)
-    xlim      =[-1 1];
-    ylim      =[-1 1];
+    xlim      =[0 0];
+    ylim      =[0 0];
     
     % catalogs is a struct of single catalog entries.
     % Each named catalog entry has fields:
@@ -179,24 +179,28 @@ classdef skychart < handle
       self.update_time = self.julianday;
     end
     
-    function h = plot(self)
+    function h = plot(self, force)
       % plot(sc): plot the sky chart
       
-      % create or get current figure.
-      [self.figure, self.xlim, self.ylim] = plot_frame(self.date);
-      h = self.figure;
+      if nargin < 2, force = false; end
+      if ~ishandle(self.figure), force=true; end
       
-      % only plot if the figure was closed, or last compute was some time ago
-      if ~isempty(self.figure) && ...
-        abs(self.julianday - self.update_time) < self.update_period/3600/24
-        % return
+      % create or get current figure.
+      [self.figure, xl, yl] = plot_frame(self.date);
+      h  = self.figure;
+
+      % only plot if the figure was closed, or zoom/visible area has changed
+      if ~isempty(self.figure) && (isempty(force) || ~force) ...
+        && all(xl == self.xlim) && all(yl == self.ylim)
+        return
       end
+
       delete(self.handles(ishandle(self.handles)));
       hold on
       % plot constellations and restore current xlim/ylim
       self.handles = plot_constellations(self.catalogs.constellations);
-      xlim(self.xlim);
-      ylim(self.ylim);
+      self.xlim = xl;
+      self.ylim = yl;
 
       % plot catalogs, restricting to magnitude and xlim/ylim
       self.handles = [ self.handles ...
@@ -305,6 +309,7 @@ function handles = plot_constellations(constellations)
   X(1:3:(end-2)) = X1; X(2:3:(end-1)) = X2; 
   Y(1:3:(end-2)) = Y1; Y(2:3:(end-1)) = Y2; 
   handles = line(X,Y, 'Color','g','LineWidth',1);
+  set(handles, 'Tag', 'SkyChart_Constellations');
 
   %--- Plot Constellation Names ---
   for Icn=1:1:length(constellations.X)
@@ -344,6 +349,7 @@ function [h,x,y] = plot_frame(Date)
   end
   x = xlim(gca);
   y = ylim(gca);
+  set(gca, 'Tag', 'SkyChart_Axes');
 
 end % plot_frame
 
@@ -432,6 +438,10 @@ function handles = plot_catalogs(catalogs, xl, yl)
   %
   handles = [];
   
+  % we shall scale the symbols as well to the figure size
+  p = get(gcf, 'Position'); p=mean(p(3:4));
+  factor = p/1024;
+  
   for f=fieldnames(catalogs)'
     h = [];
 
@@ -451,6 +461,10 @@ function handles = plot_catalogs(catalogs, xl, yl)
     y   = catalog.Y(visible);
     sz  = catalog.SIZE(visible);
     typ = catalog.TYPE(visible);
+    
+    SZ       = 8-mag+min(mag); % from 10 down ...
+    SZ(SZ<1) = 1;
+    SZ=SZ.^(2*factor);
 
     % when out user-inpolygon, color is scaled down (grayed_out) / 2
     
@@ -458,19 +472,22 @@ function handles = plot_catalogs(catalogs, xl, yl)
     case 'planets'
       % for planets: show name
       % For planets,   coloured disk (scatter) with size=Magnitude^2 colour 
-      h = scatter(x,y, markersize(mag), 'r', 'filled');
+      h = scatter(x,y, markersize(mag).^(2*factor), 'r', 'filled');
+      
     case 'stars'
       % for star, when proper name, show it
-      % For stars, use coloured disk (scatter) with size=Magnitude^2 colour from TYPE
-      h = scatter(x,y, markersize(mag), colour(typ), 'filled');
+      % For stars, use coloured hexagon (scatter) with size=Magnitude^2 colour from TYPE
+      h = scatter(x,y, SZ, colour(typ), 'filled');
+      
     case 'deep_sky_objects'
       % for DSO, when proper name, show it
       % For dso,   use circle        (scatter) with thickness=Magnitude, and given size
-      h = scatter(x,y, markersize(mag), colour(typ));
+      h = scatter(x,y, markersize(mag).^(1.5*factor), colour(typ), 's');
+      
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
     end
-    
+    set(h, 'Tag', [ 'SkyChart_' f{1} ]);
     handles = [ handles h ];
   end
   
