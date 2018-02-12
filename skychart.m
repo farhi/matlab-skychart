@@ -31,7 +31,7 @@ classdef skychart < handle
     %  MAG:   Visual magnitude
     %  TYPE:  star (O B A F G K M), planet, galaxy, open cluster, ...
     %  NAME:  Usual name; Can be a cellstr or string
-    %  SIZE:  Visual size, X or [X Y], 0 for stars
+    %  SIZE:  Visual size, X or [X Y], 0 for stars (in minutes)
     %  Description: Name and source of catalog
     %
     % Then, at compute, the catalogs are enriched with:
@@ -365,8 +365,10 @@ function [h,x,y,new] = plot_frame(Date, sc)
       'Callback', 'filemenufcn(gcbf,''FileSaveAs'')');
     uimenu(m, 'Label', 'Print',        ...
       'Callback', 'printdlg(gcbf)');  
-    uimenu(m, 'Label', 'Update All',  'Separator','on', ...
+    uimenu(m, 'Label', 'Update To Current Time',  'Separator','on', ...
       'Callback', @MenuCallback, 'Accelerator','u');
+    uimenu(m, 'Label', 'Refresh Plot', ...
+      'Callback', @MenuCallback);
     % set callback for mouse click on e.g. objects
     set(gca, 'ButtonDownFcn',        @ButtonDownCallback);
   else
@@ -491,10 +493,6 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
     sz  = catalog.SIZE(visible);
     typ = catalog.TYPE(visible);
     
-    SZ       = 8-mag+min(mag); % from 10 down ...
-    SZ(SZ<1) = 1;
-    SZ=SZ.^(2*factor);
-
     % when out user-inpolygon, color is scaled down (grayed_out) / 2
     
     % scatter plots: o,ly the 'circle' can have non-uniform size
@@ -506,19 +504,34 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
       
     case 'stars'
       % for star, when proper name, show it
-      % For stars, use coloured hexagon (scatter) with size=Magnitude^2 colour from TYPE
-      h = scatter(x,y, SZ, colour(typ), 'filled');
+      % For stars, use coloured (scatter) with size=Magnitude^2 colour from TYPE
+      SZ       = 8-mag+min(mag); % from 10 down ...
+      SZ(SZ<1) = 1;
+      h = scatter(x,y, SZ.^2, colour(typ,mag), 'filled');
       
     case 'deep_sky_objects'
       % for DSO, when proper name, show it
       % For dso,   use circle        (scatter) with thickness=Magnitude, and given size
-      h = scatter(x,y, markersize(mag).^(2*factor), colour(typ), 'o');
+      SZ1 = markersize(mag);
+      index = find(sz>0);
+      SZ2 = sz/6;
+      SZ = max(SZ1, SZ2).^(2*factor);
+      h = scatter(x,y, SZ, colour(typ,mag), 's');
       
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
     end
-    set(h, 'Tag', [ 'SkyChart_' f{1} ], 'ButtonDownFcn', @ButtonDownCallback, ...
+    set(h, 'Tag', [ 'SkyChart_' f{1} ], ...
+      'ButtonDownFcn', @ButtonDownCallback, ...
       'UserData', f{1});
+    uicm = uicontextmenu;
+    uimenu(uicm, 'Label', 'RADEC', 'Tag', [ 'SkyChart_MenuRADEC_' f{1} ]);
+    uimenu(uicm, 'Label', 'MAGTYPE', 'Tag', [ 'SkyChart_MenuMAGTYPE_' f{1} ]);
+    uimenu(uicm, 'Label', 'NAME', 'Tag', [ 'SkyChart_MenuNAME_' f{1} ]);
+    uimenu(uicm, 'Label', 'Properties', 'Separator', 'on');
+    uimenu(uicm, 'Label', 'GOTO Now');
+    uimenu(uicm, 'Label', 'Add to Selection');
+    set(h, 'UIContextMenu', uicm);
     handles = [ handles h ];
     
     catalogs.(f{1}) = catalog;
@@ -534,7 +547,7 @@ function m = markersize(mag)
   m = ceil(abs(m));
 end % markersize
 
-function c = colour(typ)
+function c = colour(typ, mag)
   % colour: determine the colour of objects for scatter3
   c = ones(numel(typ),3);  % initialise to white
   
@@ -559,12 +572,13 @@ function c = colour(typ)
              'DSO EN',  [ 0 1 0 ]; ...
              'DSO RN',  [ 0 1 0 ]; ...
              'DSO PN',  [ 0 1 0 ] };
-
+  mag = abs(min(mag(:))./mag);
+  mag(mag < .5) = .5;
   for index=1:size(tokens, 1)
     tok = tokens{index, 1};
     col = tokens{index, 2};
     ok  = strncmp(typ, tok, numel(tok));
-    c(ok,1) = col(1); c(ok,2) = col(2); c(ok,3) = col(3);
+    c(ok,1) = col(1).*mag(ok); c(ok,2) = col(2).*mag(ok); c(ok,3) = col(3).*mag(ok);
   end
 end % colour
 
@@ -608,6 +622,8 @@ function MenuCallback(src, evnt)
   case 'update'
     compute(sc,'force');
     plot(sc, 1);
+  case 'replot'
+    plot(sc, 1);
   case 'find'
     % find an object from its name 
   end
@@ -644,9 +660,18 @@ function ButtonDownCallback(src, evnt)
   % display our findings
   catalog = self.catalogs.(found.catalog);
   index   = found.index;
-  fprintf(1, '%s: RA=%f DEC=%f MAG=%f TYPE=%s NAME=%s\n', ...
-    found.catalog, catalog.RA(index), catalog.DEC(index), ...
-    catalog.MAG(index), catalog.TYPE{index}, catalog.NAME{index});
+  labels = { ...
+    'RADEC', ...
+      sprintf('RA=%f DEC=%f', catalog.RA(index), catalog.DEC(index));
+    'MAGTYPE', ...
+      sprintf('%s MAG=%f TYPE=%s', found.catalog, catalog.MAG(index), catalog.TYPE{index});
+    'NAME', ...
+      catalog.NAME{index} };
+  for index=1:size(labels,1)
+    uicm = findobj(gcf, 'Tag', ...
+      [ 'SkyChart_Menu' labels{index,1} '_' found.catalog ]);
+    set(uicm, 'Label', labels{index,2});
+  end
   
 end
 
