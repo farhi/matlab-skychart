@@ -52,3 +52,27 @@ function [h,x,y,new] = plot_frame(Date, sc)
   set(gca, 'Tag', 'SkyChart_Axes');
 
 end % plot_frame
+
+function axesLimitsCallback(src, evnt)
+  % axesLimitsCallback: trigered when a zoom was used
+  self=get(gcf, 'UserData');
+  plot(self, 'force');
+end
+
+function MenuCallback(src, evnt)
+  % MenuCallback: execute callback from menu.
+  %   the action depends on the src Label (uimenu)
+  sc = get(gcf,'UserData');
+  
+  switch lower(strtok(get(src, 'Label')))
+  case 'update'
+    compute(sc,'force');
+    plot(sc, 1);
+  case 'replot'
+    plot(sc, 1);
+  case 'reset'
+    set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
+  case 'find'
+    % find an object from its name 
+  end
+end % MenuCallback

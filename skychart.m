@@ -23,7 +23,7 @@ classdef skychart < handle
     xlim      = [0 0];
     ylim      = [0 0];
     
-    % catalogs is a struct of single catalog entries.
+    % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
     %  RA:    Right Ascension in deg
     %  DEC:   Declinaison in deg
@@ -72,7 +72,7 @@ classdef skychart < handle
       self.catalogs = load(mfilename);
       
       % create planet catalog with empty coordinates
-      self.catalogs.planets = struct('Description','Planets','RA',[]);
+      self.catalogs.planets = struct('Description','Planets - http://wise-obs.tau.ac.il/~eran/matlab.html','RA',1:9);
       
       % display available catalogs
       for f=fieldnames(self.catalogs)'
@@ -125,7 +125,10 @@ classdef skychart < handle
         % could also use http://www.convert-unix-time.com/api?timestamp=now
       end
       % compute the Julian Day
-      self.julianday = skychart_julianday(datenum(self.utc));
+      d = datenum(self.utc);
+      Date = str2num(datestr(d,'dd mm yyyy HH MM SS')); % vector
+      Frac = convertdms(Date(:,4:6),'H','f');
+      self.julianday = julday([Date(:,1:3), Frac]);
      
       d = self.utc;
     end
@@ -215,129 +218,3 @@ classdef skychart < handle
   
 end % skychart
 
-
-
-
-
-
-
-
-% ------------------------------------------------------------------------------
-% private functions
-% ------------------------------------------------------------------------------
-
-function JD = skychart_julianday(d)
-  % depends: julday, convertdms from MAAT
-  if ischar(d)
-    d = datenum(d); % make it a number
-  end
-  Date = str2num(datestr(d,'dd mm yyyy HH MM SS')); % vector
-  Frac = convertdms(Date(:,4:6),'H','f');
-  JD   = julday([Date(:,1:3), Frac]);
-end % skychart_julianday
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% ------------------------------------------------------------------------------
-% CallBacks
-% ------------------------------------------------------------------------------
-
-function MenuCallback(src, evnt)
-  % MenuCallback: execute callback from menu.
-  %   the action depends on the src Label (uimenu)
-  sc = get(gcf,'UserData');
-  
-  switch lower(strtok(get(src, 'Label')))
-  case 'update'
-    compute(sc,'force');
-    plot(sc, 1);
-  case 'replot'
-    plot(sc, 1);
-  case 'reset'
-    set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
-  case 'find'
-    % find an object from its name 
-  end
-end % MenuCallback
-
-function ButtonDownCallback(src, evnt)
-  % ButtonDownCallback: callback when user clicks on the StarBook image
-
-  % where the mouse click is
-  xy = get(gca, 'CurrentPoint'); 
-  x = xy(1,1); y = xy(1,2);
-  
-  % get the SkyChart object handle
-  self=get(gcf, 'UserData');
-  
-  % search for closest object in the corresponding catalogs
-  found.dist=inf; found.catalog=''; ; found.index=[];
-  % we try with the catalog for the given clicked handle, else try all
-  f = get(src, 'UserData');
-  if any(strcmp(f, fieldnames(self.catalogs))), catalogs = { f };
-  else catalogs = fieldnames(self.catalogs); end
-  % search in catalogs for closest object
-  for f=catalogs(:)'
-    catalog = self.catalogs.(f{1});
-    if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
-    % compute distance to closest X/Y object in that catalog
-    dist = (catalog.X - x).^2 + (catalog.Y - y).^2;
-    if isfield(catalog, 'visible')
-      dist(~catalog.visible) = inf;
-    end
-    [dist_min, dist_index] = min(dist(:));
-    % check if that guess is closer than previous guess
-    if dist_min < found.dist
-      found.dist    = dist_min;
-      found.catalog = f{1};
-      found.index   = dist_index;
-      found.RA      = catalog.RA(found.index);
-      found.DEC     = catalog.DEC(found.index);
-      found.Alt     = catalog.Alt(found.index);
-      found.Az      = catalog.Az(found.index);
-      found.MAG     = catalog.MAG(found.index);
-      found.TYPE    = catalog.TYPE{found.index};
-      found.NAME    = catalog.NAME{found.index};
-    end
-  end
-  % display our findings
-  labels = { ...
-    'RADEC',   sprintf('RA=%f DEC=%f', found.RA, found.DEC);
-    'ALTAZ',   sprintf('Az=%f Alt=%f', found.Az, found.Alt);
-    'MAGTYPE', sprintf('%s MAG=%f TYPE=%s', found.catalog, found.MAG, found.TYPE);
-    'NAME',    found.NAME };
-
-  for index=1:size(labels,1)
-    uicm = findobj(gcf, 'Tag', ...
-      [ 'SkyChart_Menu' labels{index,1} '_' found.catalog ]);
-    if isempty(uicm)
-      disp([ mfilename ': not found ' 'SkyChart_Menu' labels{index,1} '_' found.catalog ])
-    end
-    set(uicm, 'Label', labels{index,2});
-  end
-  
-end
-
-function axesLimitsCallback(src, evnt)
-  % axesLimitsCallback: trigered when a zoom was used
-  self=get(gcf, 'UserData');
-  plot(self, 'force');
-end

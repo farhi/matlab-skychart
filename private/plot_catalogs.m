@@ -28,6 +28,7 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
     y   = catalog.Y(visible);
     sz  = catalog.SIZE(visible);
     typ = catalog.TYPE(visible);
+    nam = catalog.NAME(visible);
     
     % when out user-inpolygon, color is scaled down (grayed_out) / 2
     
@@ -58,10 +59,22 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
       end
       SZ = max(SZ1, SZ2).^(2*factor);
       h = scatter(x,y, SZ, colour(typ,mag), 'o');
+      mag(mag == 0) = 20; % disable show-names for the objects showing regions (mag=0)
       
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
     end
+    % display the brightest objects name
+    [~, index] = sort(mag(:)); % sort magnitude in ascending order
+    if numel(index) > 20, index=index(1:20); end
+    for n=index(:)'
+      name = nam{n};
+      t = text(x(n)+diff(xl)*.01, y(n), strtok(name,';'));
+      handles = [ handles t ];
+      set(t, 'Color','w');
+    end
+    
+    % add mouse handling to get closest object and set menu labels
     set(h, 'Tag', [ 'SkyChart_' f{1} ], ...
       'ButtonDownFcn', @ButtonDownCallback, ...
       'UserData', f{1});
@@ -80,3 +93,61 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
   end
   
 end % plot_catalogs
+
+function ButtonDownCallback(src, evnt)
+  % ButtonDownCallback: callback when user clicks on the StarBook image
+
+  % where the mouse click is
+  xy = get(gca, 'CurrentPoint'); 
+  x = xy(1,1); y = xy(1,2);
+  
+  % get the SkyChart object handle
+  self=get(gcf, 'UserData');
+  
+  % search for closest object in the corresponding catalogs
+  found.dist=inf; found.catalog=''; ; found.index=[];
+  % we try with the catalog for the given clicked handle, else try all
+  f = get(src, 'UserData');
+  if any(strcmp(f, fieldnames(self.catalogs))), catalogs = { f };
+  else catalogs = fieldnames(self.catalogs); end
+  % search in catalogs for closest object
+  for f=catalogs(:)'
+    catalog = self.catalogs.(f{1});
+    if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
+    % compute distance to closest X/Y object in that catalog
+    dist = (catalog.X - x).^2 + (catalog.Y - y).^2;
+    if isfield(catalog, 'visible')
+      dist(~catalog.visible) = inf;
+    end
+    [dist_min, dist_index] = min(dist(:));
+    % check if that guess is closer than previous guess
+    if dist_min < found.dist
+      found.dist    = dist_min;
+      found.catalog = f{1};
+      found.index   = dist_index;
+      found.RA      = catalog.RA(found.index);
+      found.DEC     = catalog.DEC(found.index);
+      found.Alt     = catalog.Alt(found.index);
+      found.Az      = catalog.Az(found.index);
+      found.MAG     = catalog.MAG(found.index);
+      found.TYPE    = catalog.TYPE{found.index};
+      found.NAME    = catalog.NAME{found.index};
+    end
+  end
+  % display our findings
+  labels = { ...
+    'RADEC',   sprintf('RA=%f DEC=%f', found.RA, found.DEC);
+    'ALTAZ',   sprintf('Az=%f Alt=%f', found.Az, found.Alt);
+    'MAGTYPE', sprintf('%s MAG=%f TYPE=%s', found.catalog, found.MAG, found.TYPE);
+    'NAME',    found.NAME };
+
+  for index=1:size(labels,1)
+    uicm = findobj(gcf, 'Tag', ...
+      [ 'SkyChart_Menu' labels{index,1} '_' found.catalog ]);
+    if isempty(uicm)
+      disp([ mfilename ': not found ' 'SkyChart_Menu' labels{index,1} '_' found.catalog ])
+    end
+    set(uicm, 'Label', labels{index,2});
+  end
+  
+end % ButtonDownCallback
