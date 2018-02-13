@@ -139,7 +139,7 @@ classdef skychart < handle
       if strcmp(utc,'force') force = true; utc = [];
       else force = false; end
       self.date(utc); % set UTC
-      
+
       % catalogs -> store new stereographic polar coordinates and update time.
       for f=fieldnames(self.catalogs)'
         % update all valid catalogs
@@ -486,7 +486,7 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
     visible = (catalog.X.^2+catalog.Y.^2 < 1 ...
             & min(xl) < catalog.X & catalog.X < max(xl) ...
             & min(yl) < catalog.Y & catalog.Y < max(yl) ...
-            & catalog.MAG(:) & catalog.MAG(:) < mag_max);
+            & catalog.MAG(:) < mag_max);
 
     catalog.visible = visible; % store it as visible state
     
@@ -580,14 +580,19 @@ function c = colour(typ, mag)
              'DSO DN',  [ 0 1 0 ]; ...
              'DSO EN',  [ 0 1 0 ]; ...
              'DSO RN',  [ 0 1 0 ]; ...
-             'DSO PN',  [ 0 1 0 ] };
-  mag = 1-(mag-min(mag))*.1;
-  mag(mag < .5) = .5;
+             'DSO PN',  [ 0 1 0 ]; ...
+             'DSO *',   [ 0 0 0 ]; ...
+             'DSO NF',  [ 0 0 0 ]};
+  mag1 = 1-(mag-min(mag))*.1;
+  mag1(mag1 < .5 | mag==0) = .5;
+
   for index=1:size(tokens, 1)
     tok = tokens{index, 1};
     col = tokens{index, 2};
     ok  = strncmp(typ, tok, numel(tok));
-    c(ok,1) = col(1).*mag(ok); c(ok,2) = col(2).*mag(ok); c(ok,3) = col(3).*mag(ok);
+    c(ok,1) = col(1).*mag1(ok); 
+    c(ok,2) = col(2).*mag1(ok); 
+    c(ok,3) = col(3).*mag1(ok);
   end
 end % colour
 
