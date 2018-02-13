@@ -192,7 +192,7 @@ classdef skychart < handle
       h  = self.figure;
 
       % only plot if the figure was closed, or zoom/visible area has changed
-      if ~isempty(self.figure) && (isempty(force) || ~force) ...
+      if ~isempty(self.figure) && (isempty(force) || strcmp(force,'force') || ~force) ...
         && all(xl == self.xlim) && all(yl == self.ylim)
         return
       end
@@ -369,8 +369,11 @@ function [h,x,y,new] = plot_frame(Date, sc)
       'Callback', @MenuCallback, 'Accelerator','u');
     uimenu(m, 'Label', 'Refresh Plot', ...
       'Callback', @MenuCallback);
-    % set callback for mouse click on e.g. objects
-    set(gca, 'ButtonDownFcn',        @ButtonDownCallback);
+    uimenu(m, 'Label', 'Reset Plot', ...
+      'Callback', @MenuCallback);
+    % bound listeners for gca:xlim/ylim and figure:resize actions
+    propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
+    propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
   else
     set(0,'CurrentFigure', h); % select but not raise
     set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
@@ -512,11 +515,16 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
     case 'deep_sky_objects'
       % for DSO, when proper name, show it
       % For dso,   use circle        (scatter) with thickness=Magnitude, and given size
-      SZ1 = markersize(mag);
+      
+      % the size of the screen is max(diff(xl) diff(yl)) in 0-1/pixels
+      SZ1 = markersize(mag); SZ2=zeros(size(sz));
       index = find(sz>0);
-      SZ2 = sz/6;
+      if ~isempty(index)
+        % in [deg] then in 0-1 then in pixels
+        SZ2(index) = sz(index)/60/90*p/max([ diff(xl) diff(yl) ]);  
+      end
       SZ = max(SZ1, SZ2).^(2*factor);
-      h = scatter(x,y, SZ, colour(typ,mag), 's');
+      h = scatter(x,y, SZ, colour(typ,mag), 'o');
       
     otherwise
       h = scatter(x,y, markersize(mag), 'w');
@@ -525,12 +533,13 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
       'ButtonDownFcn', @ButtonDownCallback, ...
       'UserData', f{1});
     uicm = uicontextmenu;
-    uimenu(uicm, 'Label', 'RADEC', 'Tag', [ 'SkyChart_MenuRADEC_' f{1} ]);
-    uimenu(uicm, 'Label', 'MAGTYPE', 'Tag', [ 'SkyChart_MenuMAGTYPE_' f{1} ]);
     uimenu(uicm, 'Label', 'NAME', 'Tag', [ 'SkyChart_MenuNAME_' f{1} ]);
-    uimenu(uicm, 'Label', 'Properties', 'Separator', 'on');
-    uimenu(uicm, 'Label', 'GOTO Now');
-    uimenu(uicm, 'Label', 'Add to Selection');
+    uimenu(uicm, 'Label', 'RADEC', 'Tag', [ 'SkyChart_MenuRADEC_' f{1} ]);
+    uimenu(uicm, 'Label', 'ALTAZ', 'Tag', [ 'SkyChart_MenuALTAZ_' f{1} ]);
+    uimenu(uicm, 'Label', 'MAGTYPE', 'Tag', [ 'SkyChart_MenuMAGTYPE_' f{1} ]);
+    % uimenu(uicm, 'Label', 'Properties', 'Separator', 'on');
+    % uimenu(uicm, 'Label', 'GOTO Now');
+    % uimenu(uicm, 'Label', 'Add to Selection');
     set(h, 'UIContextMenu', uicm);
     handles = [ handles h ];
     
@@ -572,7 +581,7 @@ function c = colour(typ, mag)
              'DSO EN',  [ 0 1 0 ]; ...
              'DSO RN',  [ 0 1 0 ]; ...
              'DSO PN',  [ 0 1 0 ] };
-  mag = abs(min(mag(:))./mag);
+  mag = 1-(mag-min(mag))*.1;
   mag(mag < .5) = .5;
   for index=1:size(tokens, 1)
     tok = tokens{index, 1};
@@ -613,6 +622,10 @@ function legend_h = plot_legend
   
 end % plot_legend
 
+% ------------------------------------------------------------------------------
+% CallBacks
+% ------------------------------------------------------------------------------
+
 function MenuCallback(src, evnt)
   % MenuCallback: execute callback from menu.
   %   the action depends on the src Label (uimenu)
@@ -624,6 +637,8 @@ function MenuCallback(src, evnt)
     plot(sc, 1);
   case 'replot'
     plot(sc, 1);
+  case 'reset'
+    set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
   case 'find'
     % find an object from its name 
   end
@@ -639,9 +654,14 @@ function ButtonDownCallback(src, evnt)
   % get the SkyChart object handle
   self=get(gcf, 'UserData');
   
-  % search for closest object in all catalogs
+  % search for closest object in the corresponding catalogs
   found.dist=inf; found.catalog=''; ; found.index=[];
-  for f=fieldnames(self.catalogs)'
+  % we try with the catalog for the given clicked handle, else try all
+  f = get(src, 'UserData');
+  if any(strcmp(f, fieldnames(self.catalogs))), catalogs = { f };
+  else catalogs = fieldnames(self.catalogs); end
+  % search in catalogs for closest object
+  for f=catalogs(:)'
     catalog = self.catalogs.(f{1});
     if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
     % compute distance to closest X/Y object in that catalog
@@ -655,23 +675,35 @@ function ButtonDownCallback(src, evnt)
       found.dist    = dist_min;
       found.catalog = f{1};
       found.index   = dist_index;
+      found.RA      = catalog.RA(found.index);
+      found.DEC     = catalog.DEC(found.index);
+      found.Alt     = catalog.Alt(found.index);
+      found.Az      = catalog.Az(found.index);
+      found.MAG     = catalog.MAG(found.index);
+      found.TYPE    = catalog.TYPE{found.index};
+      found.NAME    = catalog.NAME{found.index};
     end
   end
   % display our findings
-  catalog = self.catalogs.(found.catalog);
-  index   = found.index;
   labels = { ...
-    'RADEC', ...
-      sprintf('RA=%f DEC=%f', catalog.RA(index), catalog.DEC(index));
-    'MAGTYPE', ...
-      sprintf('%s MAG=%f TYPE=%s', found.catalog, catalog.MAG(index), catalog.TYPE{index});
-    'NAME', ...
-      catalog.NAME{index} };
+    'RADEC',   sprintf('RA=%f DEC=%f', found.RA, found.DEC);
+    'ALTAZ',   sprintf('Az=%f Alt=%f', found.Az, found.Alt);
+    'MAGTYPE', sprintf('%s MAG=%f TYPE=%s', found.catalog, found.MAG, found.TYPE);
+    'NAME',    found.NAME };
+
   for index=1:size(labels,1)
     uicm = findobj(gcf, 'Tag', ...
       [ 'SkyChart_Menu' labels{index,1} '_' found.catalog ]);
+    if isempty(uicm)
+      disp([ mfilename ': not found ' 'SkyChart_Menu' labels{index,1} '_' found.catalog ])
+    end
     set(uicm, 'Label', labels{index,2});
   end
   
 end
 
+function axesLimitsCallback(src, evnt)
+  % axesLimitsCallback: trigered when a zoom was used
+  self=get(gcf, 'UserData');
+  plot(self, 'force');
+end
