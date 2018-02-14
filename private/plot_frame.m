@@ -24,20 +24,29 @@ function [h,x,y,new] = plot_frame(Date, sc)
     new = true;
     % now create some menu entries
     set(h, 'UserData', sc); % store the skychart handle in the figure
-    m = uimenu(h, 'Label', 'SkyChart');
-    uimenu(m, 'Label', 'Close',        ...
-      'Callback', 'filemenufcn(gcbf,''FileClose'')','Accelerator','w');
+    % figure menus
+    m = uimenu(h, 'Label', 'File');
+    
     uimenu(m, 'Label', 'Save',        ...
       'Callback', 'filemenufcn(gcbf,''FileSave'')','Accelerator','s');
     uimenu(m, 'Label', 'Save As...',        ...
       'Callback', 'filemenufcn(gcbf,''FileSaveAs'')');
     uimenu(m, 'Label', 'Print',        ...
-      'Callback', 'printdlg(gcbf)');  
-    uimenu(m, 'Label', 'Update To Current Time',  'Separator','on', ...
+      'Callback', 'printdlg(gcbf)');
+    uimenu(m, 'Label', 'Close',        ...
+      'Callback', @MenuCallback, ...
+      'Accelerator','w', 'Separator','on');
+      
+    m = uimenu(h, 'Label', 'SkyChart');
+    uimenu(m, 'Label', 'Compute For Given Time', ...
+      'Callback', @MenuCallback, 'Accelerator','t');
+    uimenu(m, 'Label', 'Update To Current Time', ...
       'Callback', @MenuCallback, 'Accelerator','u');
     uimenu(m, 'Label', 'Refresh Plot', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Reset Plot', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Connect to Scope', ...
       'Callback', @MenuCallback);
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
@@ -45,6 +54,7 @@ function [h,x,y,new] = plot_frame(Date, sc)
   else
     set(0,'CurrentFigure', h); % select but not raise
     set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
+    title([ datestr(Date) ' (UTC)' ]); 
     new = false;
   end
   x = xlim(gca);
@@ -56,7 +66,7 @@ end % plot_frame
 function axesLimitsCallback(src, evnt)
   % axesLimitsCallback: trigered when a zoom was used
   self=get(gcf, 'UserData');
-  plot(self, 'force');
+  plot(self, 1);
 end
 
 function MenuCallback(src, evnt)
@@ -64,15 +74,40 @@ function MenuCallback(src, evnt)
   %   the action depends on the src Label (uimenu)
   sc = get(gcf,'UserData');
   
-  switch lower(strtok(get(src, 'Label')))
-  case 'update'
-    compute(sc,'force');
+  switch lower(get(src, 'Label'))
+  case {'compute for given time'}
+    % request Date/Time
+    prompt = {'Enter Date Time (e.g. 14-Feb-2018 11:58:15)'};
+    name = 'SkyChart: Set Date-Time';
+    options.Resize='on';
+    options.WindowStyle='normal';
+    options.Interpreter='tex';
+    answer=inputdlg(prompt,name, 1, {sc.utc}, options);
+    if ~isempty(answer), date(sc, answer{1}); end
+    compute(sc);
     plot(sc, 1);
-  case 'replot'
+  case {'update', 'update to current time'}
+    compute(sc,'now');
     plot(sc, 1);
-  case 'reset'
+  case {'replot', 'refresh plot'}
+    plot(sc, 1);
+  case {'reset', 'reset plot'}
     set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
   case 'find'
-    % find an object from its name 
+    % find an object from its name
+  case 'connect to scope'
+    % instantiate a StarBook object
+    connect(sc);
+  case 'close'
+    % close figure stop timer, etc
+    filemenufcn(gcbf,'FileClose');
+    stop(sc.timer);
+    if ~isempty(sc.telescope) && isvalid(sc.telescope)
+      if ~isempty(sc.telescope.timer) && isvalid(sc.telescope.timer)
+        stop(sc.telescope.timer);
+      end
+      close(sc.telescope.figure);
+      delete(sc.telescope);
+    end
   end
 end % MenuCallback

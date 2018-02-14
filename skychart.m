@@ -53,6 +53,8 @@ classdef skychart < handle
     visibility= [];       % a polygon area in the X,Y coordinates (defined by user)
     xlim      = [0 0];
     ylim      = [0 0];
+    timer     = [];
+    selected  = [];
     
     % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
@@ -78,24 +80,26 @@ classdef skychart < handle
   end % properties
   
   methods
-    function sc = skychart(telescope)
+    function sc = skychart
       
       % load catalogs
       load(sc);
       
       % populate with starting stuff
       getplace(sc);
-      % connect to telesqcope (StarBook)
-      if nargin
-        sc.telescope = telescope;
-      end
       
       % update all and compute Alt/Az, X/Y coordinates
-      compute(sc);
+      compute(sc, 'now');
       
       % plot the sky view
       plot(sc);
-    end
+      
+      % attach a timer for regular updates (5 sec)
+      sc.timer = timer('TimerFcn', @TimerCallback, ...
+                'Period', 5.0, 'ExecutionMode', 'fixedDelay');
+      set(sc.timer, 'UserData', sc);
+      start(sc.timer);
+    end % skychart
     
     function load(self)
       % load catalogs: objects, stars
@@ -117,7 +121,7 @@ classdef skychart < handle
           disp([ '  ' desc ])
         end
       end
-    end
+    end % load
    
     function getplace(self, sb)
       % getplace(sc): get the location
@@ -144,13 +148,17 @@ classdef skychart < handle
           self.place = [ 45.26 5.45 ];
         end
       end
-    end
+    end % getplace
    
     function d=date(self, utc)
       % date(sc):      get the current UTC
       % date(sc, UTC): sets the date as given UTC
       if nargin > 1 && ~isempty(utc)
-        self.utc = utc;
+        if strcmp(utc, 'now')
+          self.utc = local_time_to_utc(now);
+        else
+          self.utc = utc;
+        end
       else
         self.utc = local_time_to_utc(now); % in private, uses Java
         % could also use http://www.convert-unix-time.com/api?timestamp=now
@@ -162,17 +170,23 @@ classdef skychart < handle
       self.julianday = julday([Date(:,1:3), Frac]);
      
       d = self.utc;
-    end
+    end % date
     
     function compute(self, utc)
-      % compute(sc):      compute and update all catalogs
-      % compute(sc, utc): the same, but for a given UTC
+      % compute(sc):          compute and update all catalogs
+      % compute(sc, utc):     the same, but for a given UTC
+      % compute(sc, 'now'):   update UTC to now, and force compute
+      % compute(sc, 'force'): force to compute for previously set date/time
       
       if nargin < 2, utc = []; end
     
-      if strcmp(utc,'force') force = true; utc = [];
+      if strcmp(utc,'force')   force = true; utc = [];
+      elseif strcmp(utc,'now') force = true;
       else force = false; end
-      self.date(utc); % set UTC
+      
+      if ~isempty(utc) % we set a specific date before computation, else use date as stored
+        self.date(utc); % set UTC
+      end
 
       % catalogs -> store new stereographic polar coordinates and update time.
       for f=fieldnames(self.catalogs)'
@@ -213,7 +227,7 @@ classdef skychart < handle
       end
       
       self.update_time = self.julianday;
-    end
+    end % compute
     
     function h = plot(self, force)
       % plot(sc): plot the sky chart
@@ -222,11 +236,35 @@ classdef skychart < handle
       if ~ishandle(self.figure), force=true; end
       
       % create or get current figure.
-      [self.figure, xl, yl, new] = plot_frame(self.date, self);
-      h  = self.figure;
+      [self.figure, xl, yl, new] = plot_frame(self.utc, self);
+      
+      % when a scope is connected, plot its location
+      RA = []; DEC=[];
+      if ~isempty(self.telescope) && isvalid(self.telescope)
+        try
+          disp(getstatus(self.telescope));
+          % get the current scope location
+          RA = (self.telescope.ra.h   +self.telescope.ra.min/60)*15; % h -> deg
+          DEC=  self.telescope.dec.deg+self.telescope.dec.min/60;
+        catch ME
+          disp argh
+          disp(getReport(ME))
+        end
+      end
+      if ~isempty(RA)
+        % compute Alt-Az and stereographic polar coords
+        [Az, Alt] = radec2altaz(RA, DEC, self.julianday, self.place);
+        [X, Y]    = pr_stereographic_polar(Az+90, Alt);
+        % first remove any previous pointer
+        delete(findobj(self.figure, 'Tag','SkyChart_Pointer1'));
+        delete(findobj(self.figure, 'Tag','SkyChart_Pointer2'));
+        % the plot the pointer at scope location (cross + circle), 0.5 deg
+        plot(X,Y, 'ro', 'MarkerSize', 20, 'Tag','SkyChart_Pointer1'); 
+        plot(X,Y, 'r+', 'MarkerSize', 20, 'Tag','SkyChart_Pointer2');
+      end
 
       % only plot if the figure was closed, or zoom/visible area has changed
-      if ~isempty(self.figure) && (isempty(force) || strcmp(force,'force') || ~force) ...
+      if ~isempty(self.figure) && (isempty(force) || (ischar(force) && ~strcmp(force,'force')) || ~force) ...
         && all(xl == self.xlim) && all(yl == self.ylim)
         return
       end
@@ -243,9 +281,31 @@ classdef skychart < handle
                        plot_catalogs(self.catalogs, self.xlim, self.ylim);
       self.handles = [ self.handles handles ];
       if new, plot_legend; end
-    end
+    end % plot
+    
+    function connect(self, sb)
+      % connect(sc): connect to a Vixen StarBook scope controller
+      if nargin > 1
+        self.telescope = sb;
+      else
+        self.telescope = starbook;
+      end
+    end % connect
    
   end % methods
   
 end % skychart
+
+% ------------------------------------------------------------------------------
+
+function TimerCallback(src, evnt)
+  % TimerCallback: executed regularly (5 sec)
+  
+  sc = get(src, 'UserData');
+  
+  % update: compute and plot
+  compute(sc);
+  plot(sc);
+  
+end % TimerCallback
 
