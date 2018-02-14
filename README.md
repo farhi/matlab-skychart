@@ -17,13 +17,18 @@ You may zoom the plot using the Zoom tool (in the Toolbar). You may as well
 use the drag tool to move the visible area. Right-click shows a contextual
 menu with the under-lying object properties (coordinates, type, ...).
 
+Usage
+-----
+
 To use this code, type:
 
+```matlab
 >> sc = skychart
+```
 
 displays the view at the current UTC and location.
 
-Methods:
+**Methods:**
 
 - skychart:   create the view
 - date:       set/get the date (UTC)
@@ -33,8 +38,16 @@ Methods:
 
 You may force a re-computation and replot of the sky view with:
 
+```matlab
 >> compute(sc, 'force')
 >> plot(sc, 'force)
+```
+
+Requirements/Installation
+-------------------------
+Matlab, no external toolbox.
+
+Just copy the files and go into the src directory. Then type commands above.
 
 Credits
 -------
