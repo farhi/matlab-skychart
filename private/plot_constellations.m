@@ -1,4 +1,4 @@
-function handles = plot_constellations(constellations)
+function handles = plot_constellations(constellations, fig)
   % plot_constellations: plot constellation lines and labels
   
   % identify the visible Constellations and plot
@@ -13,6 +13,9 @@ function handles = plot_constellations(constellations)
   X = nan*ones(numel(X1)*3, 1); Y=X;
   X(1:3:(end-2)) = X1; X(2:3:(end-1)) = X2; 
   Y(1:3:(end-2)) = Y1; Y(2:3:(end-1)) = Y2; 
+  
+  set(0, 'CurrentFigure', fig); % select but not raise
+  hold on
   handles = line(X,Y, 'Color','g','LineWidth',1);
   set(handles, 'Tag', 'SkyChart_Constellations');
 

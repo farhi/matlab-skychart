@@ -1,4 +1,4 @@
-function legend_h = plot_legend
+function legend_h = plot_legend(fig)
   % plot_legend: create a legend for object categories
   types = { ...
     'Constellations', 'g.-'; ...
@@ -10,6 +10,8 @@ function legend_h = plot_legend
     
   % we create fake plots and the corresponding legend
   handles = [];
+  set(0, 'CurrentFigure', fig); % select but not raise
+  hold on
   for index=1:size(types,1)
     this = types{index,2};
     h = plot(1,1, 'Color', this(1));

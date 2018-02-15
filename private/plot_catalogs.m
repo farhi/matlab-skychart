@@ -1,11 +1,13 @@
-function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
+function [handles, catalogs] = plot_catalogs(catalogs, xl, yl, fig)
   % plot_catalogs(catalogs, xl, yl): plot all visible objects from the catalog
   %
   handles = [];
   
   % we shall scale the symbols as well to the figure size
-  p = get(gcf, 'Position'); p=mean(p(3:4));
+  p = get(fig, 'Position'); p=mean(p(3:4));
   factor = p/1024;
+  set(0, 'CurrentFigure', fig); % select but not raise
+  hold on
   
   for f=fieldnames(catalogs)'
     h = [];

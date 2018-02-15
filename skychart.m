@@ -115,7 +115,7 @@ classdef skychart < handle
       
       % attach a timer for regular updates (5 sec)
       sc.timer = timer('TimerFcn', @TimerCallback, ...
-                'Period', 5.0, 'ExecutionMode', 'fixedDelay');
+                'Period', 5.0, 'ExecutionMode', 'fixedDelay', 'Name', mfilename);
       set(sc.timer, 'UserData', sc);
       start(sc.timer);
     end % skychart
@@ -254,9 +254,9 @@ classdef skychart < handle
       if nargin < 2, force = false; end
       if ~ishandle(self.figure), force=true; end
       
-      % create or get current figure.
+      % create or get current figure. Sets hold on and fig focus
       [self.figure, xl, yl, new] = plot_frame(self.utc, self);
-      
+
       % when a scope is connected, plot its location
       plot_telescope(self);
 
@@ -269,17 +269,18 @@ classdef skychart < handle
       end
 
       delete(self.handles(ishandle(self.handles)));
-      hold on
       % plot constellations and restore current xlim/ylim
-      self.handles = plot_constellations(self.catalogs.constellations);
+      self.handles = plot_constellations(self.catalogs.constellations, self.figure);
       self.xlim = xl;
       self.ylim = yl;
 
       % plot catalogs, restricting to magnitude and xlim/ylim
       [handles, self.catalogs] = ...
-                       plot_catalogs(self.catalogs, self.xlim, self.ylim);
+                       plot_catalogs(self.catalogs, ...
+                         self.xlim, self.ylim, self.figure);
       self.handles = [ self.handles handles ];
-      if new, plot_legend; end
+      if new, plot_legend(self.figure); end
+      
     end % plot
     
     function connect(self, sb)
@@ -294,6 +295,7 @@ classdef skychart < handle
       elseif exist('starbook')
         self.telescope = starbook;
       end
+      self.telescope.skychart = self;
     end % connect
     
     function goto(self, RA, DEC)
@@ -365,6 +367,24 @@ classdef skychart < handle
       else
         self.list_period = str2double(answer{1}); 
       end
+    end
+    
+    function close(self)
+      % close(sc): close skychart
+      if ~isempty(self.timer) && isvalid(self.timer)
+        stop(self.timer); 
+        delete(self.timer)
+      end
+      if ~isempty(self.telescope) && isvalid(self.telescope)
+        if ~isempty(self.telescope.timer) && isvalid(self.telescope.timer)
+          stop(self.telescope.timer);
+          delete(self.telescope.timer)
+        end
+        delete(self.telescope.figure);
+        delete(self.telescope);
+      end
+      delete(self.figure);
+      delete(self);
     end
    
   end % methods

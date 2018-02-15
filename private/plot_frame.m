@@ -5,8 +5,8 @@ function [h,x,y,new] = plot_frame(Date, sc)
   if isempty(h)
     h = figure('Tag','SkyChart', ...
       'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ], ...
-      'MenuBar','none', 'ToolBar','figure');
-      
+      'MenuBar','none', 'ToolBar','figure', ...
+      'CloseRequestFcn',@MenuCallback);     
     %--- Horizon ---
     Theta = (0:5:360)';
     X     = cosd(Theta);
@@ -52,8 +52,10 @@ function [h,x,y,new] = plot_frame(Date, sc)
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'GOTO Selected Object', ...
       'Callback', @MenuCallback);
+      
+    m = uimenu(h, 'Label', 'List');
     uimenu(m, 'Label', 'Add Selected Object to List', ...
-      'Callback', @MenuCallback, 'Separator','on');
+      'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Show List', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Set List Period', ...
@@ -61,7 +63,7 @@ function [h,x,y,new] = plot_frame(Date, sc)
     uimenu(m, 'Label', 'Clear List', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Start/Stop GOTO List', ...
-      'Callback', @MenuCallback);
+      'Callback', @MenuCallback, 'Separator','on');
       
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
@@ -71,6 +73,7 @@ function [h,x,y,new] = plot_frame(Date, sc)
     set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
     title([ datestr(Date) ' (UTC)' ]); 
     new = false;
+    hold on
   end
   x = xlim(gca);
   y = ylim(gca);
@@ -82,15 +85,24 @@ function axesLimitsCallback(src, evnt)
   % axesLimitsCallback: trigered when a zoom was used
   ax = evnt.AffectedObject;
   self=get(ax, 'UserData');
-  plot(self, 1);
+  if ~isempty(self) && isobject(self)
+    plot(self, 1);
+  end
 end
 
 function MenuCallback(src, evnt)
   % MenuCallback: execute callback from menu.
   %   the action depends on the src Label (uimenu)
   sc = get(gcbf,'UserData');
+  try
+    lab = get(src, 'Label');
+  catch
+    % is this a Figure ?
+    lab = get(src, 'Name');
+    lab = 'close';
+  end
   
-  switch lower(get(src, 'Label'))
+  switch lower(lab)
   case {'compute for given time'}
     % request Date/Time
     prompt = {'Enter Date Time (e.g. 14-Feb-2018 11:58:15)'};
@@ -118,16 +130,7 @@ function MenuCallback(src, evnt)
   case 'send scope to selected object'
     goto(sc);
   case 'close'
-    % close figure stop timer, etc
-    filemenufcn(gcbf,'FileClose');
-    stop(sc.timer);
-    if ~isempty(sc.telescope) && isvalid(sc.telescope)
-      if ~isempty(sc.telescope.timer) && isvalid(sc.telescope.timer)
-        stop(sc.telescope.timer);
-      end
-      close(sc.telescope.figure);
-      delete(sc.telescope);
-    end
+    close(sc);
   case 'add selected object to list'
     listAdd(sc);
   case 'show list'
