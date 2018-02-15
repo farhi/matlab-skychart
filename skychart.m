@@ -22,11 +22,28 @@ classdef skychart < handle
   %   load:       load the catalogs. Done at start.
   %   getplace:   get the current GPS location from the network.
   %   plot:       plot/replot the view.
+  %   connect:    connect to a scope controler
+  %   goto:       send connected scope to selected location
   %
   % You may force a re-computation and replot of the sky view with:
   %
   % >> compute(sc, 'force')
-  % >> plot(sc, 'force)
+  % >> plot(sc, 1)
+  %
+  % Connecting to a Scope
+  %
+  % You may connect to a telescope mount using e.g.
+  %
+  % >> connect(sc, scope)
+  %
+  % where 'scope' should be an object with methods:
+  %
+  %   getstatus: read the mount status, and update the scope properties:
+  %              scope.ra.h, scope.ra.min, scope.dec.deg, scope.dec.min
+  %   gotoradec(RA,DEC): send the mount to location (RA,DEC)
+  %
+  % when scope is omitted, a connection with a Vixen StarBook is attempted. This
+  % controler can be set in 'simulate' mode.
   %
   % Credits:
   % E. Ofek     MAAT            GPL3 2004
@@ -50,11 +67,13 @@ classdef skychart < handle
     figure    = 0;
     handles   = [];       % handles of the view to delete when updating the plot
     telescope = [];
-    visibility= [];       % a polygon area in the X,Y coordinates (defined by user)
     xlim      = [0 0];
     ylim      = [0 0];
     timer     = [];
     selected  = [];
+    list      = [];       % a list of selected objects
+    list_start= 0;        % start time when read the list
+    list_period = 1800;   % time between list GOTO actions
     
     % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
@@ -239,32 +258,12 @@ classdef skychart < handle
       [self.figure, xl, yl, new] = plot_frame(self.utc, self);
       
       % when a scope is connected, plot its location
-      RA = []; DEC=[];
-      if ~isempty(self.telescope) && isvalid(self.telescope)
-        try
-          disp(getstatus(self.telescope));
-          % get the current scope location
-          RA = (self.telescope.ra.h   +self.telescope.ra.min/60)*15; % h -> deg
-          DEC=  self.telescope.dec.deg+self.telescope.dec.min/60;
-        catch ME
-          disp argh
-          disp(getReport(ME))
-        end
-      end
-      if ~isempty(RA)
-        % compute Alt-Az and stereographic polar coords
-        [Az, Alt] = radec2altaz(RA, DEC, self.julianday, self.place);
-        [X, Y]    = pr_stereographic_polar(Az+90, Alt);
-        % first remove any previous pointer
-        delete(findobj(self.figure, 'Tag','SkyChart_Pointer1'));
-        delete(findobj(self.figure, 'Tag','SkyChart_Pointer2'));
-        % the plot the pointer at scope location (cross + circle), 0.5 deg
-        plot(X,Y, 'ro', 'MarkerSize', 20, 'Tag','SkyChart_Pointer1'); 
-        plot(X,Y, 'r+', 'MarkerSize', 20, 'Tag','SkyChart_Pointer2');
-      end
+      plot_telescope(self);
 
       % only plot if the figure was closed, or zoom/visible area has changed
-      if ~isempty(self.figure) && (isempty(force) || (ischar(force) && ~strcmp(force,'force')) || ~force) ...
+      if ~isempty(self.figure) && (isempty(force) ...
+        || (ischar(force) && ~strcmp(force,'force')) ...
+        || (isscalar(force) && ~force)) ...
         && all(xl == self.xlim) && all(yl == self.ylim)
         return
       end
@@ -285,12 +284,88 @@ classdef skychart < handle
     
     function connect(self, sb)
       % connect(sc): connect to a Vixen StarBook scope controller
+      if ~isempty(self.telescope) && isvalid(self.telescope)
+        disp([ mfilename ': Scope is already connected.' ])
+        plot(self.telescope);
+        return
+      end
       if nargin > 1
         self.telescope = sb;
-      else
+      elseif exist('starbook')
         self.telescope = starbook;
       end
     end % connect
+    
+    function goto(self, RA, DEC)
+      % goto(sc, ra, dec): send scope to given location
+      %   ra  is given in hh:mm:ss
+      %   dec is given in deg:min
+      if nargin ==1
+        if isfield(self.selected, 'RA')
+          RA = self.selected.RA/15; % RA deg -> h
+          DEC= self.selected.DEC;
+        else return; end
+      end
+      if ~isempty(self.telescope) && isvalid(self.telescope)
+        % send scope
+        disp([ mfilename ': GOTO ' self.selected.NAME ])
+        self.telescope.gotoradec(RA, DEC);
+      else
+        disp([ mfilename ': No Scope is Connected yet. Use "connect" first' ]);
+      end
+    end % goto
+    
+    function listAdd(self)
+      % listAdd(sc): add the last selected object to the List
+      if ~isempty(self.selected)
+        if isempty(self.list)
+          self.list = self.selected;
+        else
+          self.list(end+1) = self.selected;
+        end
+        disp([ mfilename ': Add to list: ' self.selected.NAME ]);
+      end
+    end
+    
+    function listClear(self)
+      % listClear(sc): clear the List
+      self.list = [];
+    end
+    
+    function listShow(self)
+      % listShow(sc): show the current List
+      
+      ListString = {};
+      for index=1:numel(self.list)
+        ListString{end+1} = self.list(index).NAME;
+      end
+      if ~isempty(ListString)
+        listdlg('PromptString','Current List',...
+                'SelectionMode','single',...
+                'ListSize', [ 480 240 ], ...
+                'ListString', ListString);
+      end
+    end
+    
+    function listRun(self)
+      % listRun(sc): start to execute a list of GOTO's
+      self.list_start = true;
+    end
+    
+    function listPeriod(self)
+      % listPeriod(sc): dialogue to change the List period (sc.list_period) 
+      prompt = {'Enter List period in seconds (time between each GOTO. This is e.g. observation time.'};
+      name = 'SkyChart: Set List Period';
+      options.Resize='on';
+      options.WindowStyle='normal';
+      options.Interpreter='tex';
+      answer=inputdlg(prompt,name, 1, {num2str(self.list_period)}, options);
+      if isempty(answer), 
+        return;
+      else
+        self.list_period = str2double(answer{1}); 
+      end
+    end
    
   end % methods
   
@@ -306,6 +381,23 @@ function TimerCallback(src, evnt)
   % update: compute and plot
   compute(sc);
   plot(sc);
+  
+  % look if we are running a list
+  if sc.list_start
+    if isscalar(sc.list_start) || etime(clock, sc.list_start) > sc.list_period
+      % time elapsed between items for GOTO
+      % we reset the timer, and goto the first item, then clear it
+      if ~isempty(sc.list)
+        sc.list_start = clock;
+        sc.selected   = sc.list(1);
+        goto(sc);        % go there
+        sc.list(1) = []; % remove that element from the list
+      else
+        % all list elements have been used. Cancel Run.
+        sc.list_start = 0;
+      end
+    end
+  end
   
 end % TimerCallback
 

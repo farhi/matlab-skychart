@@ -46,8 +46,23 @@ function [h,x,y,new] = plot_frame(Date, sc)
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Reset Plot', ...
       'Callback', @MenuCallback);
+      
+    m = uimenu(h, 'Label', 'Scope');
     uimenu(m, 'Label', 'Connect to Scope', ...
       'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'GOTO Selected Object', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Add Selected Object to List', ...
+      'Callback', @MenuCallback, 'Separator','on');
+    uimenu(m, 'Label', 'Show List', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Set List Period', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Clear List', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Start/Stop GOTO List', ...
+      'Callback', @MenuCallback);
+      
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
@@ -59,20 +74,21 @@ function [h,x,y,new] = plot_frame(Date, sc)
   end
   x = xlim(gca);
   y = ylim(gca);
-  set(gca, 'Tag', 'SkyChart_Axes');
+  set(gca, 'Tag', 'SkyChart_Axes', 'UserData', sc);
 
 end % plot_frame
 
 function axesLimitsCallback(src, evnt)
   % axesLimitsCallback: trigered when a zoom was used
-  self=get(gcf, 'UserData');
+  ax = evnt.AffectedObject;
+  self=get(ax, 'UserData');
   plot(self, 1);
 end
 
 function MenuCallback(src, evnt)
   % MenuCallback: execute callback from menu.
   %   the action depends on the src Label (uimenu)
-  sc = get(gcf,'UserData');
+  sc = get(gcbf,'UserData');
   
   switch lower(get(src, 'Label'))
   case {'compute for given time'}
@@ -92,12 +108,15 @@ function MenuCallback(src, evnt)
   case {'replot', 'refresh plot'}
     plot(sc, 1);
   case {'reset', 'reset plot'}
+    figure(sc.figure);
     set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
   case 'find'
     % find an object from its name
   case 'connect to scope'
     % instantiate a StarBook object
     connect(sc);
+  case 'send scope to selected object'
+    goto(sc);
   case 'close'
     % close figure stop timer, etc
     filemenufcn(gcbf,'FileClose');
@@ -109,5 +128,20 @@ function MenuCallback(src, evnt)
       close(sc.telescope.figure);
       delete(sc.telescope);
     end
+  case 'add selected object to list'
+    listAdd(sc);
+  case 'show list'
+    listShow(sc);
+  case 'clear list'
+    listClear(sc);
+  case 'start/stop goto list'
+    if sc.list_start
+      % already running: we stop execution
+      sc.list_start = 0;
+    else
+      listRun(sc);
+    end
+  case 'set list period'
+    listPeriod(sc);
   end
 end % MenuCallback

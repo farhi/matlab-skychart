@@ -84,8 +84,9 @@ function [handles, catalogs] = plot_catalogs(catalogs, xl, yl)
     uimenu(uicm, 'Label', 'ALTAZ', 'Tag', [ 'SkyChart_MenuALTAZ_' f{1} ]);
     uimenu(uicm, 'Label', 'MAGTYPE', 'Tag', [ 'SkyChart_MenuMAGTYPE_' f{1} ]);
     % uimenu(uicm, 'Label', 'Properties', 'Separator', 'on');
-    uimenu(uicm, 'Label', 'Send Scope here Now', 'Callback', @MenuCallback);
-    % uimenu(uicm, 'Label', 'Add to Selection');
+    uimenu(uicm, 'Label', 'Send Scope here Now', 'Callback', @MenuCallback, ...
+      'Tag','SkyChart_MenuGOTO', 'Separator','on');  
+    uimenu(uicm, 'Label', 'Add to List', 'Callback', @MenuCallback);  
     set(h, 'UIContextMenu', uicm);
     handles = [ handles h ];
     
@@ -158,10 +159,13 @@ function MenuCallback(src, evnt)
   
   % get the last selected target
   self=get(gcf, 'UserData');
-  found = self.selected;
-  if isstruct(found) && ~isempty(self.telescope) && isvalid(self.telescope)
-    % the object properties have been stored as a struct
-    self.telescope.gotoradec(found.RA/15, found.DEC); % RA deg -> h
+  
+  
+  switch lower(get(src, 'Label'))
+  case 'send scope here now'
+    goto(self);
+  case 'add to list'
+    listAdd(self);
   end
   
 end % MenuCallback
