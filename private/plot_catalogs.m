@@ -20,7 +20,7 @@ function self = plot_catalogs(self)
             & min(self.ylim) < catalog.Y & catalog.Y < max(self.ylim) ...
             & catalog.MAG(:) < mag_max);
 
-    % catalog.visible = visible; % store it as visible state
+    catalog.visible = visible; % store it as visible state
     
     mag = catalog.MAG(visible);
     x   = catalog.X(visible);
@@ -95,7 +95,7 @@ function self = plot_catalogs(self)
     end
     set(h, 'Tag', [ 'SkyChart_Labels_' f{1} ]);
     
-    % self.catalogs.(f{1}) = catalog;
+    self.catalogs.(f{1}) = catalog;
   end
   
 end % plot_catalogs

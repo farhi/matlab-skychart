@@ -79,6 +79,11 @@ function [sc, new] = plot_frame(sc)
     sc.figure = h;
     sc.axes   = gca; % where to send plots
     set(sc.axes, 'Tag','SkyChart_Axes');
+    
+    % start the update timer (when replotting after creation)
+    if ~isempty(sc.timer) && isvalid(sc.timer) && strcmp(sc.timer.Running, 'off')
+      start(sc.timer);
+    end
   else
     new       = false;
   end

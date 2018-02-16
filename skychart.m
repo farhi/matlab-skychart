@@ -19,11 +19,11 @@ classdef skychart < handle
   % Methods:
   %   skychart:   create the view
   %   date:       set/get the date (UTC)
-  %   load:       load the catalogs. Done at start.
-  %   getplace:   get the current GPS location from the network.
+  %   getplace:   get the current GPS location from the network
   %   plot:       plot/replot the view.
   %   connect:    connect to a scope controler
   %   goto:       send connected scope to selected location
+  %   findobj:    search for a named object and select it
   %
   % You may force a re-computation and replot of the sky view with:
   %
@@ -261,7 +261,8 @@ classdef skychart < handle
       [self, new] = plot_frame(self);
       set(self.figure, 'HandleVisibility','on', 'NextPlot','add');
       hold on
-      title([ datestr(self.utc) ' (UTC)' ]); 
+      title([ datestr(self.utc) ' (UTC)' ]);
+      set(self.figure, 'Name', [ 'SkyChart: ' datestr(self.utc) ' (UTC)' ]); 
 
       % when a scope is connected, replot its location
       plot_telescope(self);
@@ -301,10 +302,24 @@ classdef skychart < handle
       end
       if nargin > 1
         self.telescope = sb;
-      elseif exist('starbook')
-        self.telescope = starbook;
+      elseif nargin == 1 && exist('starbook')
+        sb = [];
+        % we search for any already opened starbook handle
+        h = findall(0, '-regexp', 'Tag','StarBook_','Type','figure');
+        if numel(h) > 1, h=h(1); end
+        if ~isempty(h)
+          ud = get(h, 'UserData');
+          if isstruct(ud) && isfield(ud, 'StarBook')
+            sb = ud.StarBook;
+          end
+        end
+        if isempty(sb)
+          sb = starbook;
+        else
+          disp([ mfilename ': Connecting to already opened ' get(h, 'Tag') ])
+        end
+        self.telescope = sb;
       end
-      self.telescope.skychart = self;
     end % connect
     
     function goto(self, RA, DEC)
@@ -326,8 +341,55 @@ classdef skychart < handle
       end
     end % goto
     
-    function listAdd(self)
+    function found = findobj(self, name)
+      % findobj(sc, name): find a given object in catalogs. Select it.
+      catalogs = fieldnames(self.catalogs);
+      found = [];
+      for f=catalogs(:)'
+        catalog = self.catalogs.(f{1});
+        if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
+        % search for name
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ';' ])));
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ';' ])));
+        end
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ])));
+        end
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ])));
+        end
+        if ~isempty(index)
+          found.index   = index(1);
+          found.catalog = f{1};
+          found.RA      = catalog.RA(found.index);
+          found.DEC     = catalog.DEC(found.index);
+          found.Alt     = catalog.Alt(found.index);
+          found.Az      = catalog.Az(found.index);
+          found.MAG     = catalog.MAG(found.index);
+          found.TYPE    = catalog.TYPE{found.index};
+          found.NAME    = catalog.NAME{found.index};
+          break;
+        end
+      end
+      if ~isempty(found)
+        disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
+      end
+      self.selected = found;
+    end
+    
+    function listAdd(self, name)
       % listAdd(sc): add the last selected object to the List
+      % listAdd(sc, name): search for name and add it to the List
+      if nargin > 1
+        if ischar(name), 
+          name = findobj(self, name);
+        end
+        if isstruct(name) && isfield(name, 'RA') ...
+        && isfield(name, 'DEC') && isfield(name, 'NAME')
+          self.selected = name;
+        end
+      end
       if ~isempty(self.selected)
         if isempty(self.list)
           self.list = self.selected;
@@ -350,8 +412,10 @@ classdef skychart < handle
       for index=1:numel(self.list)
         ListString{end+1} = self.list(index).NAME;
       end
+      disp([ mfilename ': Current List with Period ' num2str(self.list_period) ' [s] betwen items' ])
+      disp(char(ListString))
       if ~isempty(ListString)
-        listdlg('PromptString','Current List',...
+        listdlg('PromptString',[ 'Current List with Period ' num2str(self.list_period) ' [s]' ],...
                 'SelectionMode','single',...
                 'ListSize', [ 480 240 ], ...
                 'ListString', ListString);
@@ -363,18 +427,23 @@ classdef skychart < handle
       self.list_start = true;
     end
     
-    function listPeriod(self)
-      % listPeriod(sc): dialogue to change the List period (sc.list_period) 
-      prompt = {'Enter List period in seconds (time between each GOTO. This is e.g. observation time.'};
-      name = 'SkyChart: Set List Period';
-      options.Resize='on';
-      options.WindowStyle='normal';
-      options.Interpreter='tex';
-      answer=inputdlg(prompt,name, 1, {num2str(self.list_period)}, options);
-      if isempty(answer), 
-        return;
+    function listPeriod(self, dt)
+      % listPeriod(sc): dialogue to change the List period (sc.list_period in [s]) 
+      % listPeriod(sc, dt): set the List period to dt [s]
+      if nargin > 1
+        self.list_period = dt;
       else
-        self.list_period = str2double(answer{1}); 
+        prompt = {'{\color{blue}Enter List period in [seconds]} (time between each GOTO. This is e.g. observation time)'};
+        name = 'SkyChart: Set List Period';
+        options.Resize='on';
+        options.WindowStyle='normal';
+        options.Interpreter='tex';
+        answer=inputdlg(prompt,name, 1, {num2str(self.list_period)}, options);
+        if isempty(answer), 
+          return;
+        else
+          self.list_period = str2double(answer{1}); 
+        end
       end
     end
     
@@ -384,7 +453,7 @@ classdef skychart < handle
         stop(self.timer); 
       end
       if ishandle(self.figure); delete(self.figure); end
-      self.figure = []; self.axes = [];
+      self.figure = []; self.axes = []; self.plotting = false;
     end
    
   end % methods
