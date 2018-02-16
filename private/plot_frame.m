@@ -1,29 +1,18 @@
-function [h,x,y,new] = plot_frame(Date, sc)
+function [sc, new] = plot_frame(sc)
   % plot_frame: plot the chart frame (horizon), return the handle and x/y limits
 
-  h = findobj('Tag','SkyChart');
-  if isempty(h)
+  if ishandle(sc.figure)
+    h = sc.figure;
+  else 
+    h = findall(0, 'Tag','SkyChart'); 
+  end
+  if numel(h) > 1, delete(h(2:end)); h = h(1); end
+  if isempty(h) || ~ishandle(h)
     h = figure('Tag','SkyChart', ...
-      'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ], ...
       'MenuBar','none', 'ToolBar','figure', ...
-      'CloseRequestFcn',@MenuCallback);     
-    %--- Horizon ---
-    Theta = (0:5:360)';
-    X     = cosd(Theta);
-    Y     = sind(Theta);
-    plot(X,Y,'LineWidth',3); title([ datestr(Date) ' (UTC)' ]); axis tight
-
-    %--- Plot N/E/S/W ---
-    Offset = 0.02;
-    Letter = 0.05;
-    text(0,                1+Offset,       'N', 'Color','b');
-    text(-1-Offset-Letter, 0,              'E', 'Color','b');
-    text(0,               -1-Offset-Letter,'S', 'Color','b');
-    text(1+Offset,         0,              'W', 'Color','b');
-    set(gca,'XTick',[],'YTick',[], 'Color','k');
-    new = true;
+      'CloseRequestFcn',@MenuCallback, 'UserData', sc);     
+    
     % now create some menu entries
-    set(h, 'UserData', sc); % store the skychart handle in the figure
     % figure menus
     m = uimenu(h, 'Label', 'File');
     
@@ -53,38 +42,62 @@ function [h,x,y,new] = plot_frame(Date, sc)
     uimenu(m, 'Label', 'GOTO Selected Object', ...
       'Callback', @MenuCallback);
       
-    m = uimenu(h, 'Label', 'List');
-    uimenu(m, 'Label', 'Add Selected Object to List', ...
+    m = uimenu(h, 'Label', 'Planning');
+    uimenu(m, 'Label', 'Add Selected Object', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Show List', ...
+    uimenu(m, 'Label', 'Show...', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Set List Period', ...
+    uimenu(m, 'Label', 'Set Period...', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Clear List', ...
+    uimenu(m, 'Label', 'Clear', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Start/Stop GOTO List', ...
+    uimenu(m, 'Label', 'Start/Stop Execution', ...
       'Callback', @MenuCallback, 'Separator','on');
+      
+    % plot horizon NSEW
+    %--- Horizon ---
+    Theta = (0:5:360)';
+    X     = cosd(Theta);
+    Y     = sind(Theta);
+    plot(X,Y,'LineWidth',3); 
+    axis tight
+
+    %--- Plot N/E/S/W ---
+    Offset = 0.02;
+    Letter = 0.05;
+    text(0,                1+Offset,       'N', 'Color','b');
+    text(-1-Offset-Letter, 0,              'E', 'Color','b');
+    text(0,               -1-Offset-Letter,'S', 'Color','b');
+    text(1+Offset,         0,              'W', 'Color','b');
+    set(gca,'XTick',[],'YTick',[], 'Color','k');
+    new = true;
       
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
+    
+    sc.figure = h;
+    sc.axes   = gca; % where to send plots
+    set(sc.axes, 'Tag','SkyChart_Axes');
   else
-    set(0,'CurrentFigure', h); % select but not raise
-    set(h, 'Name', [ 'SkyChart: ' datestr(Date) ' (UTC)' ]);
-    title([ datestr(Date) ' (UTC)' ]); 
-    new = false;
-    hold on
+    new       = false;
   end
-  x = xlim(gca);
-  y = ylim(gca);
-  set(gca, 'Tag', 'SkyChart_Axes', 'UserData', sc);
+  if isempty(sc.axes) || ~ishandle(sc.axes)
+    sc.axes = findall(0, 'Tag','SkyChart_Axes');
+  end
+  % select figure and axes, but not raise
+  set(0, 'CurrentFigure', sc.figure);
 
 end % plot_frame
 
 function axesLimitsCallback(src, evnt)
-  % axesLimitsCallback: trigered when a zoom was used
-  ax = evnt.AffectedObject;
-  self=get(ax, 'UserData');
+  % axesLimitsCallback: trigered when a zoom/pan was used
+  h    = findall(0, 'Tag','SkyChart');
+  if numel(h) > 1, delete(h(2:end)); h=h(1); end
+  if isempty(h) || ~ishandle(h)
+    return
+  end
+  self = get(h, 'UserData');
   if ~isempty(self) && isobject(self)
     plot(self, 1);
   end
@@ -104,9 +117,9 @@ function MenuCallback(src, evnt)
   
   switch lower(lab)
   case {'compute for given time'}
-    % request Date/Time
-    prompt = {'Enter Date Time (e.g. 14-Feb-2018 11:58:15)'};
-    name = 'SkyChart: Set Date-Time';
+    % request self.utc/Time
+    prompt = {'Enter self.utc Time (e.g. 14-Feb-2018 11:58:15)'};
+    name = 'SkyChart: Set Date/Time';
     options.Resize='on';
     options.WindowStyle='normal';
     options.Interpreter='tex';
@@ -121,7 +134,7 @@ function MenuCallback(src, evnt)
     plot(sc, 1);
   case {'reset', 'reset plot'}
     figure(sc.figure);
-    set(gca, 'XLim', [-1 1], 'YLim', [-1 1]);
+    set(sc.axes, 'XLim', [-1 1], 'YLim', [-1 1]);
   case 'find'
     % find an object from its name
   case 'connect to scope'
@@ -131,20 +144,20 @@ function MenuCallback(src, evnt)
     goto(sc);
   case 'close'
     close(sc);
-  case 'add selected object to list'
+  case 'add selected object'
     listAdd(sc);
-  case 'show list'
+  case 'show...'
     listShow(sc);
-  case 'clear list'
+  case 'clear'
     listClear(sc);
-  case 'start/stop goto list'
+  case 'start/stop execution'
     if sc.list_start
       % already running: we stop execution
       sc.list_start = 0;
     else
       listRun(sc);
     end
-  case 'set list period'
+  case 'set period...'
     listPeriod(sc);
   end
 end % MenuCallback

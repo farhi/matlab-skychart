@@ -1,4 +1,4 @@
-function legend_h = plot_legend(fig)
+function legend_h = plot_legend(self)
   % plot_legend: create a legend for object categories
   types = { ...
     'Constellations', 'g.-'; ...
@@ -7,11 +7,13 @@ function legend_h = plot_legend(fig)
     'Galaxies',       'ro '; ...
     'Clusters',       'bo '; ...
     'Nebulae',        'go '};
-    
+  
+  h = findall(self.figure, 'Tag', 'SkyChart_legend');
+  if ~isempty(h) return; end
+  
   % we create fake plots and the corresponding legend
   handles = [];
-  set(0, 'CurrentFigure', fig); % select but not raise
-  hold on
+  set(0, 'CurrentFigure', self.figure);
   for index=1:size(types,1)
     this = types{index,2};
     h = plot(1,1, 'Color', this(1));
@@ -24,10 +26,11 @@ function legend_h = plot_legend(fig)
     handles = [ handles h ];
     set(h, 'DisplayName', types{index,1});
   end
+  set(handles, 'Tag', 'SkyChart_FakePlot');
   % populate the legend
   legend_h = legend(handles);
-  set(legend_h, 'TextColor','w','Color','none','Tag','SkyChart_legend', ...
+  set(legend_h, 'TextColor','w','Color','none', ...
+    'Tag','SkyChart_legend', ...
     'XColor','y', 'YColor','y');
- 
   
 end % plot_legend

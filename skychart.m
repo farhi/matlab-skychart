@@ -1,7 +1,7 @@
 classdef skychart < handle
   % SKYCHART: a class to plot a sky chart with stars/objects
   %
-  % This class comptes and plots the sky seen at given location and time. About
+  % This class computes and plots the sky seen at given location and time. About
   % 43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
   % Moon and 7 planets. The actual number of rendered objects depends on the zomm 
   % level in the sky chart.
@@ -64,8 +64,8 @@ classdef skychart < handle
     julianday = 0;
     update_time = 0;      % local time of last computation
     update_period = 120;  % in seconds
-    figure    = 0;
-    handles   = [];       % handles of the view to delete when updating the plot
+    figure    = [];
+    axes      = [];
     telescope = [];
     xlim      = [0 0];
     ylim      = [0 0];
@@ -74,6 +74,7 @@ classdef skychart < handle
     list      = [];       % a list of selected objects
     list_start= 0;        % start time when read the list
     list_period = 1800;   % time between list GOTO actions
+    plotting  = false;
     
     % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
@@ -162,7 +163,7 @@ classdef skychart < handle
           ip = urlread('http://ip-api.com/json');
           ip = parse_json(ip);  % into struct (private)
           self.place = [ ip.lon ip.lat ];
-          disp([ mfilename ': Your are located in ' ip.city ' ' ip.country ' [long lat]=' num2str(self.place) ]);
+          disp([ mfilename ': You are located in ' ip.city ' ' ip.country ' [long lat]=' num2str(self.place) ]);
         catch
           self.place = [ 45.26 5.45 ];
         end
@@ -251,35 +252,43 @@ classdef skychart < handle
     function h = plot(self, force)
       % plot(sc): plot the sky chart
       
+      if self.plotting, return; end
       if nargin < 2, force = false; end
       if ~ishandle(self.figure), force=true; end
       
-      % create or get current figure. Sets hold on and fig focus
-      [self.figure, xl, yl, new] = plot_frame(self.utc, self);
+      self.plotting = true;
+      % create or get current figure. Sets fig focus
+      [self, new] = plot_frame(self);
+      set(self.figure, 'HandleVisibility','on', 'NextPlot','add');
+      hold on
+      title([ datestr(self.utc) ' (UTC)' ]); 
 
-      % when a scope is connected, plot its location
+      % when a scope is connected, replot its location
       plot_telescope(self);
 
       % only plot if the figure was closed, or zoom/visible area has changed
       if ~isempty(self.figure) && (isempty(force) ...
         || (ischar(force) && ~strcmp(force,'force')) ...
         || (isscalar(force) && ~force)) ...
-        && all(xl == self.xlim) && all(yl == self.ylim)
+        && all(xlim(self.axes) == self.xlim) && all(ylim(self.axes) == self.ylim)
+        hold off
+        set(self.figure, 'HandleVisibility','off', 'NextPlot','new');
+        self.plotting = false;
         return
       end
 
-      delete(self.handles(ishandle(self.handles)));
-      % plot constellations and restore current xlim/ylim
-      self.handles = plot_constellations(self.catalogs.constellations, self.figure);
-      self.xlim = xl;
-      self.ylim = yl;
+      % replot constellations and store current xlim/ylim
+      plot_constellations(self);
+      self.xlim = xlim(self.axes);
+      self.ylim = ylim(self.axes);
 
-      % plot catalogs, restricting to magnitude and xlim/ylim
-      [handles, self.catalogs] = ...
-                       plot_catalogs(self.catalogs, ...
-                         self.xlim, self.ylim, self.figure);
-      self.handles = [ self.handles handles ];
-      if new, plot_legend(self.figure); end
+      % replot catalogs, restricting to magnitude and xlim/ylim
+      self = plot_catalogs(self);
+      if new, plot_legend(self); end
+      
+      hold off
+      set(self.figure, 'HandleVisibility','off', 'NextPlot','new');
+      self.plotting = false;
       
     end % plot
     
@@ -373,18 +382,9 @@ classdef skychart < handle
       % close(sc): close skychart
       if ~isempty(self.timer) && isvalid(self.timer)
         stop(self.timer); 
-        delete(self.timer)
       end
-      if ~isempty(self.telescope) && isvalid(self.telescope)
-        if ~isempty(self.telescope.timer) && isvalid(self.telescope.timer)
-          stop(self.telescope.timer);
-          delete(self.telescope.timer)
-        end
-        delete(self.telescope.figure);
-        delete(self.telescope);
-      end
-      delete(self.figure);
-      delete(self);
+      if ishandle(self.figure); delete(self.figure); end
+      self.figure = []; self.axes = [];
     end
    
   end % methods
@@ -398,26 +398,28 @@ function TimerCallback(src, evnt)
   
   sc = get(src, 'UserData');
   
-  % update: compute and plot
-  compute(sc);
-  plot(sc);
-  
-  % look if we are running a list
-  if sc.list_start
-    if isscalar(sc.list_start) || etime(clock, sc.list_start) > sc.list_period
-      % time elapsed between items for GOTO
-      % we reset the timer, and goto the first item, then clear it
-      if ~isempty(sc.list)
-        sc.list_start = clock;
-        sc.selected   = sc.list(1);
-        goto(sc);        % go there
-        sc.list(1) = []; % remove that element from the list
-      else
-        % all list elements have been used. Cancel Run.
-        sc.list_start = 0;
+  if isvalid(sc), 
+    % update: compute and plot
+    compute(sc);
+    plot(sc);
+    
+    % look if we are running a list
+    if sc.list_start
+      if isscalar(sc.list_start) || etime(clock, sc.list_start) > sc.list_period
+        % time elapsed between items for GOTO
+        % we reset the timer, and goto the first item, then clear it
+        if ~isempty(sc.list)
+          sc.list_start = clock;
+          sc.selected   = sc.list(1);
+          goto(sc);        % go there
+          sc.list(1) = []; % remove that element from the list
+        else
+          % all list elements have been used. Cancel Run.
+          sc.list_start = 0;
+        end
       end
-    end
-  end
+    end 
+  else delete(src); end
   
 end % TimerCallback
 
