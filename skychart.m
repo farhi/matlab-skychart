@@ -254,7 +254,7 @@ classdef skychart < handle
       
       if self.plotting, return; end
       if nargin < 2, force = false; end
-      if ~ishandle(self.figure), force=true; end
+      if isempty(self.figure) || ~ishandle(self.figure), force=true; end
       
       self.plotting = true;
       % create or get current figure. Sets fig focus
