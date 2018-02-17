@@ -6,7 +6,8 @@ function legend_h = plot_legend(self)
     'Stars',          'c0 '; ...
     'Galaxies',       'ro '; ...
     'Clusters',       'bo '; ...
-    'Nebulae',        'go '};
+    'Nebulae',        'go '; ...
+    'Selection',      'wx ' };
   
   h = findall(self.figure, 'Tag', 'SkyChart_legend');
   if ~isempty(h) return; end
@@ -20,7 +21,7 @@ function legend_h = plot_legend(self)
     if this(2) == '0'
       set(h, 'Marker', 'o', 'MarkerFaceColor', this(1));
     else set(h, 'Marker', this(2)); end
-    if this(3) ~= ' '
+    if numel(this) < 3 || this(3) ~= ' '
       set(h, 'LineStyle', this(3)); 
     else set(h, 'LineStyle', 'none'); end
     handles = [ handles h ];

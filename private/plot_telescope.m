@@ -1,5 +1,11 @@
 function plot_telescope(self)
   % plot_telescope: plot a marker at the telescope location
+  
+  % first remove any previous pointer
+    delete(findobj(self.figure, 'Tag','SkyChart_Pointer1'));
+    delete(findobj(self.figure, 'Tag','SkyChart_Pointer2'));
+    
+  % get the scope location
   RA = []; DEC=[];
   if ~isempty(self.telescope) && isvalid(self.telescope)
     try
@@ -11,13 +17,13 @@ function plot_telescope(self)
       disp(getReport(ME))
     end
   end
+  
+  % plot
   if ~isempty(RA)
     % compute Alt-Az and stereographic polar coords
     [Az, Alt] = radec2altaz(RA, DEC, self.julianday, self.place);
     [X, Y]    = pr_stereographic_polar(Az+90, Alt);
-    % first remove any previous pointer
-    delete(findobj(self.figure, 'Tag','SkyChart_Pointer1'));
-    delete(findobj(self.figure, 'Tag','SkyChart_Pointer2'));
+    
     % the plot the pointer at scope location (cross + circle), 0.5 deg
     plot(X,Y, 'ro', 'MarkerSize', 20, 'Tag','SkyChart_Pointer1'); 
     plot(X,Y, 'r+', 'MarkerSize', 20, 'Tag','SkyChart_Pointer2');

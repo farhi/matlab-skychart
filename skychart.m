@@ -3,7 +3,7 @@ classdef skychart < handle
   %
   % This class computes and plots the sky seen at given location and time. About
   % 43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
-  % Moon and 7 planets. The actual number of rendered objects depends on the zomm 
+  % Moon and 7 planets. The actual number of rendered objects depends on the zoom 
   % level in the sky chart.
   %
   % You may zoom the plot using the Zoom tool (in the Toolbar). You may as well 
@@ -54,6 +54,7 @@ classdef skychart < handle
   %   https://fr.mathworks.com/matlabcentral/fileexchange/22295-local-time-to-utc
   % Stars (~46000) data base  from http://astrosci.scimuze.com/stellar_data.htm
   % Deep sky objects (~13000) from http://klima-luft.de/steinicke/ngcic/ngcic_e.htm
+  % StarBook (Vixen) https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control
 
   
   properties
@@ -277,6 +278,9 @@ classdef skychart < handle
         self.plotting = false;
         return
       end
+      
+      % plot selection
+      plot_list(self);
 
       % replot constellations and store current xlim/ylim
       plot_constellations(self);
@@ -292,6 +296,60 @@ classdef skychart < handle
       self.plotting = false;
       
     end % plot
+    
+    function close(self)
+      % close(sc): close skychart
+      if ~isempty(self.timer) && isvalid(self.timer)
+        stop(self.timer); 
+      end
+      if ishandle(self.figure); delete(self.figure); end
+      self.figure = []; self.axes = []; self.plotting = false;
+    end
+    
+    function found = findobj(self, name)
+      % findobj(sc, name): find a given object in catalogs. Select it.
+      catalogs = fieldnames(self.catalogs);
+      found = [];
+      for f=catalogs(:)'
+        catalog = self.catalogs.(f{1});
+        if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
+        % search for name
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ';' ])));
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ';' ])));
+        end
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ])));
+        end
+        if isempty(index)
+        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ])));
+        end
+        if ~isempty(index)
+          found.index   = index(1);
+          found.catalog = f{1};
+          found.RA      = catalog.RA(found.index);
+          found.DEC     = catalog.DEC(found.index);
+          found.Alt     = catalog.Alt(found.index);
+          found.Az      = catalog.Az(found.index);
+          found.MAG     = catalog.MAG(found.index);
+          found.TYPE    = catalog.TYPE{found.index};
+          found.NAME    = catalog.NAME{found.index};
+          break;
+        end
+      end
+      if ~isempty(found)
+        disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
+      end
+      self.selected = found;
+    end
+    
+    function url=help(self)
+      % help(sb): open the Help page
+      url = fullfile('file:///',fileparts(which(mfilename)),'doc','SkyChart.html');
+      open_system_browser(url);
+    end
+    
+    % scope methods ------------------------------------------------------------
     
     function connect(self, sb)
       % connect(sc): connect to a Vixen StarBook scope controller
@@ -341,42 +399,7 @@ classdef skychart < handle
       end
     end % goto
     
-    function found = findobj(self, name)
-      % findobj(sc, name): find a given object in catalogs. Select it.
-      catalogs = fieldnames(self.catalogs);
-      found = [];
-      for f=catalogs(:)'
-        catalog = self.catalogs.(f{1});
-        if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
-        % search for name
-        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ';' ])));
-        if isempty(index)
-        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ';' ])));
-        end
-        if isempty(index)
-        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ ';' name ])));
-        end
-        if isempty(index)
-        index = find(~cellfun(@isempty, strfind(catalog.NAME, [ name ])));
-        end
-        if ~isempty(index)
-          found.index   = index(1);
-          found.catalog = f{1};
-          found.RA      = catalog.RA(found.index);
-          found.DEC     = catalog.DEC(found.index);
-          found.Alt     = catalog.Alt(found.index);
-          found.Az      = catalog.Az(found.index);
-          found.MAG     = catalog.MAG(found.index);
-          found.TYPE    = catalog.TYPE{found.index};
-          found.NAME    = catalog.NAME{found.index};
-          break;
-        end
-      end
-      if ~isempty(found)
-        disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
-      end
-      self.selected = found;
-    end
+    % list/planning methods ----------------------------------------------------
     
     function listAdd(self, name)
       % listAdd(sc): add the last selected object to the List
@@ -398,11 +421,17 @@ classdef skychart < handle
         end
         disp([ mfilename ': Add to list: ' self.selected.NAME ]);
       end
+      if ishandle(self.figure)
+        plot(self, 1);
+      end
     end
     
     function listClear(self)
       % listClear(sc): clear the List
       self.list = [];
+      if ishandle(self.figure)
+        plot(self, 1);
+      end
     end
     
     function listShow(self)
@@ -415,10 +444,19 @@ classdef skychart < handle
       disp([ mfilename ': Current List with Period ' num2str(self.list_period) ' [s] betwen items' ])
       disp(char(ListString))
       if ~isempty(ListString)
-        listdlg('PromptString',[ 'Current List with Period ' num2str(self.list_period) ' [s]' ],...
-                'SelectionMode','single',...
-                'ListSize', [ 480 240 ], ...
-                'ListString', ListString);
+        [selection, ok] = listdlg('PromptString', ...
+          { [ 'Current List with Period ' num2str(self.list_period) ' [s]' ],...
+            'Select items to remove from list and Click REMOVE' }, ...
+          'ListSize', [ 480 240 ], ...
+          'ListString', ListString, ...
+          'Name', 'SkyChart: Current List', ...
+          'OKString', 'Remove Selection','CancelString', 'OK');
+        if ok == 1 && ~isempty(selection)
+          self.list(selection) = [];
+        end
+      end
+      if ishandle(self.figure)
+        plot(self, 1);
       end
     end
     
@@ -445,15 +483,6 @@ classdef skychart < handle
           self.list_period = str2double(answer{1}); 
         end
       end
-    end
-    
-    function close(self)
-      % close(sc): close skychart
-      if ~isempty(self.timer) && isvalid(self.timer)
-        stop(self.timer); 
-      end
-      if ishandle(self.figure); delete(self.figure); end
-      self.figure = []; self.axes = []; self.plotting = false;
     end
    
   end % methods

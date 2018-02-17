@@ -35,6 +35,9 @@ function [sc, new] = plot_frame(sc)
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Reset Plot', ...
       'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Help', 'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'About SkyChart', 'Callback', @MenuCallback, ...
+      'Separator','on');
       
     m = uimenu(h, 'Label', 'Scope');
     uimenu(m, 'Label', 'Connect to Scope', ...
@@ -162,6 +165,23 @@ function MenuCallback(src, evnt)
     else
       listRun(sc);
     end
+    
+  case 'about skychart'
+    try
+      im = imread(fullfile(fileparts(which(mfilename)),'..','doc','SkyChart.png'));
+    catch
+      im = '';
+    end
+    msg = { [ 'SkyChart <https://github.com/farhi/matlab-skychart>' ], ...
+              'A Matlab interface to plot the sky', ...
+              '(c) E. Farhi GPL2 2018' };
+    if ~isempty(im)
+      msgbox(msg,  'About SkyChart', 'custom', im);
+    else
+      helpdlg(msg, 'About SkyChart');
+    end
+  case 'help'
+    help(sc);
   case 'set period...'
     listPeriod(sc);
   end
