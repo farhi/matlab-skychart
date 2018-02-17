@@ -10,7 +10,7 @@ Purpose
  
 This class computes and plots the sky seen at given location and time. About
 43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
-Moon and 7 planets. The actual number of rendered objects depends on the zomm 
+Moon and 7 planets. The actual number of rendered objects depends on the zoom 
 level in the sky chart.
 
 You may zoom the plot using the Zoom tool (in the Toolbar). You may as well 
