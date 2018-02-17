@@ -48,7 +48,9 @@ function [sc, new] = plot_frame(sc)
     m = uimenu(h, 'Label', 'Planning');
     uimenu(m, 'Label', 'Add Selected Object', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Show...', ...
+    uimenu(m, 'Label', 'Add Grid around Selected Object', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Edit/Show...', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Set Period...', ...
       'Callback', @MenuCallback);
@@ -154,7 +156,7 @@ function MenuCallback(src, evnt)
     close(sc);
   case 'add selected object'
     listAdd(sc);
-  case 'show...'
+  case 'edit/show...'
     listShow(sc);
   case 'clear'
     listClear(sc);
@@ -165,7 +167,20 @@ function MenuCallback(src, evnt)
     else
       listRun(sc);
     end
-    
+  case 'add grid around selected object'
+    % request grid size / angular step
+    prompt = {'Enter Grid size (n x n)', ...
+              'Enter Angular step ([deg]) e.g. FOV=CameraSensor_mm/FocalLength_mm*57.3'};
+    name = 'SkyChart: Create Grid';
+    options.Resize='on';
+    options.WindowStyle='normal';
+    options.Interpreter='tex';
+    answer=inputdlg(prompt,name, 1, {'3','0.75'}, options);
+    if ~isempty(answer)
+      n = str2double(answer{1});
+      da= str2double(answer{2});
+      listGrid(sc, sc.selected, n, da);
+    end
   case 'about skychart'
     try
       im = imread(fullfile(fileparts(which(mfilename)),'..','doc','SkyChart.png'));

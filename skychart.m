@@ -385,14 +385,16 @@ classdef skychart < handle
       %   ra  is given in hh:mm:ss
       %   dec is given in deg:min
       if nargin ==1
-        if isfield(self.selected, 'RA')
+        if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC')
           RA = self.selected.RA/15; % RA deg -> h
           DEC= self.selected.DEC;
         else return; end
       end
       if ~isempty(self.telescope) && isvalid(self.telescope)
         % send scope
-        disp([ mfilename ': GOTO ' self.selected.NAME ])
+        if isfield(self.selected, 'NAME')
+          disp([ mfilename ': GOTO ' self.selected.NAME ])
+        end
         self.telescope.gotoradec(RA, DEC);
       else
         disp([ mfilename ': No Scope is Connected yet. Use "connect" first' ]);
@@ -401,19 +403,23 @@ classdef skychart < handle
     
     % list/planning methods ----------------------------------------------------
     
-    function listAdd(self, name)
+    function listAdd(self, RA, DEC, name)
       % listAdd(sc): add the last selected object to the List
       % listAdd(sc, name): search for name and add it to the List
+      % listAdd(sc, RA,DEC, {name}): add RA/DEC to the List
       if nargin > 1
-        if ischar(name), 
-          name = findobj(self, name);
-        end
-        if isstruct(name) && isfield(name, 'RA') ...
-        && isfield(name, 'DEC') && isfield(name, 'NAME')
-          self.selected = name;
+        if ischar(RA)
+          self.selected = findobj(self, RA);
+        elseif isnumeric(RA) && isnumeric(DEC)
+          if nargin < 4 || isempty(name)
+            name = sprintf('RA=%.2f DEC=%.2f', RA, DEC); 
+          end
+          self.selected = struct('RA', RA, 'DEC', DEC, 'NAME', name);
+        elseif isfield(self.selected, 'RA') && isfield(self.selected, 'DEC')
+          self.selected = RA;
         end
       end
-      if ~isempty(self.selected)
+      if ~isempty(self.selected) && isfield(self.selected, 'RA') && isfield(self.selected, 'DEC')
         if isempty(self.list)
           self.list = self.selected;
         else
@@ -424,7 +430,7 @@ classdef skychart < handle
       if ishandle(self.figure)
         plot(self, 1);
       end
-    end
+    end % listAdd
     
     function listClear(self)
       % listClear(sc): clear the List
@@ -432,7 +438,7 @@ classdef skychart < handle
       if ishandle(self.figure)
         plot(self, 1);
       end
-    end
+    end % listClear
     
     function listShow(self)
       % listShow(sc): show the current List
@@ -458,12 +464,12 @@ classdef skychart < handle
       if ishandle(self.figure)
         plot(self, 1);
       end
-    end
+    end % listShow
     
     function listRun(self)
       % listRun(sc): start to execute a list of GOTO's
       self.list_start = true;
-    end
+    end % listRun
     
     function listPeriod(self, dt)
       % listPeriod(sc): dialogue to change the List period (sc.list_period in [s]) 
@@ -483,7 +489,50 @@ classdef skychart < handle
           self.list_period = str2double(answer{1}); 
         end
       end
-    end
+    end % listPeriod
+    
+    function listGrid(self, RA, DEC, n, da)
+      % listGrid(sc): build a 3x3 grid around selection with step 0.75 deg.
+      % listGrid(sc, RA, DEC, n, da): build a n x n grid around RA/DEC with angular step da
+      %   The angular step should be e.g. the field of view in order to build a 
+      %   panorama / stitch view.
+      %   When using a focal length F with a camera sensor size S, the FOV is:
+      %     FOV = S/F*57.3 [deg], where S and F should e.g. be in [mm]
+      %
+      %   With a 1200 mm focal length and an APS-C sensor 23.5x15.6, the FOV is:
+      %     FOV = 0.74 [deg]
+      %     
+      if nargin == 1
+        if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC') 
+          RA = self.selected.RA;
+          DEC= self.selected.DEC;
+          name = self.selected.NAME;
+          da = 0.75; n=3;
+        else return; end
+      elseif isstruct(RA) && isfield(RA, 'RA') && isfield(RA, 'DEC')
+        if nargin < 4, da = 0.75; else da=n;  end
+        if nargin < 3, n = 3;     else n=DEC; end
+        self.selected = RA;
+        RA = self.selected.RA;
+        DEC= self.selected.DEC;
+        if isfield(self.selected,'NAME')
+          name = self.selected.NAME;
+        else name = ''; end
+      elseif nargin >= 3 && isnumeric(RA) && isnumeric(DEC)
+        if nargin < 4, n  = 3; end
+        if nargin < 5, da = .75; end
+        name = '';
+      else return; end
+      if isfinite(n) && isfinite(da)
+        n = round(n);
+        for ra = RA+da*((0:(n-1))-(n-1)/2)
+          for dec = DEC+da*((0:(n-1))-(n-1)/2)
+            listAdd(self, ra, dec, ...
+              sprintf('RA=%.2f DEC=%.2f %s', ra, dec, name));
+          end
+        end
+      end
+    end % listGrid
    
   end % methods
   

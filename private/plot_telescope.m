@@ -1,6 +1,12 @@
 function plot_telescope(self)
   % plot_telescope: plot a marker at the telescope location
   
+  % FOV for focal length and camera sensor:
+  % FOV=sensor size / focal length in radians -> one for H and V
+  % https://www.dpreview.com/forums/post/54555442
+  %
+  % pointer could be a sqare symbol with actual mean dimension (enevr know in which orientation)
+  
   % first remove any previous pointer
     delete(findobj(self.figure, 'Tag','SkyChart_Pointer1'));
     delete(findobj(self.figure, 'Tag','SkyChart_Pointer2'));
