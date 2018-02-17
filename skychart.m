@@ -73,9 +73,10 @@ classdef skychart < handle
     timer     = [];
     selected  = [];
     list      = [];       % a list of selected objects
-    list_start= 0;        % start time when read the list
-    list_period = 1800;   % time between list GOTO actions
+    list_start= 0;        % start time when reading the list
+    list_period = 1800;   % time between list/planning GOTO actions
     plotting  = false;
+    UserData  = [];
     
     % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
@@ -331,6 +332,8 @@ classdef skychart < handle
           found.DEC     = catalog.DEC(found.index);
           found.Alt     = catalog.Alt(found.index);
           found.Az      = catalog.Az(found.index);
+          found.X       = catalog.X(found.index);
+          found.Y       = catalog.Y(found.index);
           found.MAG     = catalog.MAG(found.index);
           found.TYPE    = catalog.TYPE{found.index};
           found.NAME    = catalog.NAME{found.index};

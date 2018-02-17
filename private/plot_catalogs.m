@@ -137,6 +137,10 @@ function ButtonDownCallback(src, evnt)
       found.DEC     = catalog.DEC(found.index);
       found.Alt     = catalog.Alt(found.index);
       found.Az      = catalog.Az(found.index);
+      found.Alt     = catalog.Alt(found.index);
+      found.Az      = catalog.Az(found.index);
+      found.X       = catalog.X(found.index);
+      found.Y       = catalog.Y(found.index);
       found.MAG     = catalog.MAG(found.index);
       found.TYPE    = catalog.TYPE{found.index};
       found.NAME    = catalog.NAME{found.index};

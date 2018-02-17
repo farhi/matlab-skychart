@@ -46,6 +46,8 @@ function [sc, new] = plot_frame(sc)
       'Callback', @MenuCallback);
       
     m = uimenu(h, 'Label', 'Planning');
+    uimenu(m, 'Label', 'Find object...', ...
+      'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Add Selected Object', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Add Grid around Selected Object', ...
@@ -128,7 +130,7 @@ function MenuCallback(src, evnt)
   switch lower(lab)
   case {'compute for given time'}
     % request self.utc/Time
-    prompt = {'Enter self.utc Time (e.g. 14-Feb-2018 11:58:15)'};
+    prompt = {'{\color{blue}Enter Date/Time} (e.g. 14-Feb-2018 11:58:15)'};
     name = 'SkyChart: Set Date/Time';
     options.Resize='on';
     options.WindowStyle='normal';
@@ -145,12 +147,31 @@ function MenuCallback(src, evnt)
   case {'reset', 'reset plot'}
     figure(sc.figure);
     set(sc.axes, 'XLim', [-1 1], 'YLim', [-1 1]);
-  case 'find'
+  case {'find','find object...'}
     % find an object from its name
+    prompt = {'{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224. Use spaces between Catalog Name and ID. Known Catalogs include: StarID, HD, HR, M, NGC, IC, ...'};
+    name = 'SkyChart: Find Object';
+    options.Resize='on';
+    options.WindowStyle='normal';
+    options.Interpreter='tex';
+    answer=inputdlg(prompt,name, 1, {'M 42'}, options);
+    if ~isempty(answer)
+      found = findobj(sc, answer{1});
+      
+      if ~isempty(found) && ishandle(sc.figure)
+        % center plot on object and replot
+        if isfield(found, 'X')
+          figure(sc.figure);
+          set(sc.axes, 'XLim', [found.X-.1 found.X+.1], ...
+                       'YLim', [found.Y-.1 found.Y+.1]);
+        end
+        plot(sc, 1); 
+      end
+    end
   case 'connect to scope'
     % instantiate a StarBook object
     connect(sc);
-  case 'send scope to selected object'
+  case {'send scope to selected object','goto selected object'}
     goto(sc);
   case 'close'
     close(sc);
@@ -167,10 +188,10 @@ function MenuCallback(src, evnt)
     else
       listRun(sc);
     end
-  case 'add grid around selected object'
+  case {'add grid around selected object','add grid around'}
     % request grid size / angular step
-    prompt = {'Enter Grid size (n x n)', ...
-              'Enter Angular step ([deg]) e.g. FOV=CameraSensor_mm/FocalLength_mm*57.3'};
+    prompt = {'{\color{blue}Enter Grid size} (n x n)', ...
+              '{\color{blue}Enter Angular step} ([deg]) e.g. FOV=CameraSensor_mm/FocalLength_mm*57.3'};
     name = 'SkyChart: Create Grid';
     options.Resize='on';
     options.WindowStyle='normal';
