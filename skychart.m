@@ -16,7 +16,7 @@ classdef skychart < handle
   %
   % displays the view at the current UTC and location.
   %
-  % Methods:
+  % Methods (main):
   %   skychart:   create the view
   %   date:       set/get the date (UTC)
   %   getplace:   get the current GPS location from the network

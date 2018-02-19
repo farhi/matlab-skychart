@@ -26,7 +26,7 @@ To use this code, type:
 >> sc = skychart
 ```
 
-displays the view at the current UTC and location. The location is obtained from the closes network router (requires internet connection). Else defaults to Grenoble. Ypu can change the location by giving its GPS coordinates with e.g. (in [deg]):
+displays the view at the current UTC and location. The location is obtained from the closes network router (requires internet connection). Else defaults to Grenoble. You can change the location by giving its GPS coordinates with e.g. (in [deg]):
 
 ```matlab
 >> sc.place = [5.7 45.2]
@@ -49,6 +49,8 @@ You may force a re-computation and replot of the sky view with:
 >> plot(sc, 1)
 ```
 
+or use the "SkyChart/Replot" menu item.
+
 The Chart view
 --------------
 
@@ -56,15 +58,15 @@ As seen above, the Chart view represent the visible sky, with stars and deep sky
 
 The color of stars (filled circles) depend on their spectral type:
 
-- <span style="color:red">M K</span>
-- <span style="color:green">F G</span>
-- <span style="color:blue">O B A</span>
+- <span style="color:red">red: M K</span>
+- <span style="color:green">green: F G</span>
+- <span style="color:blue">blue: O B A</span>
 
 Deep sky objects are shown as empty circles:
 
-- <span style="color:red">galaxies</span>
-- <span style="color:green">nebulae</span>
-- <span style="color:blue">star clusters</span>
+- <span style="color:red">red: galaxies</span>
+- <span style="color:green">green: nebulae</span>
+- <span style="color:blue">blue: star clusters</span>
 
 The intensity of the color matches the actual visible magnitude.
 
@@ -94,7 +96,7 @@ where 'scope' should be an object with properties/methods:
 when scope is omitted, a connection with a Vixen StarBook is attempted. This
 controler can be set in 'simulate' mode.
 
-Get the StarBook controller for Matlab at https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control. It even works without the physical mount, and then sets itself in 'simulate' mode.
+Get the StarBook controller for Matlab at https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control. It even works without the physical mount, and then sets itself in 'simulate' mode. A red pointer will then show its current location.
 
 Selecting objects and Planning observations
 -------------------------------------------
@@ -150,7 +152,7 @@ which uses a 3x3 grid with angular step 0.75 deg. To change the grid size, use:
 
 where **n** is the grid binning, e.g. [3 4], and **da** is the angular step between DEC and RA lines, e.g. [0.75 1.22] in [deg].
 
-Once you are satisfied with the list, you can set the time of observation between mount moves as the list Period from the "Planning/Set Period" menu entry (time given in [s], and the method:
+Once you are satisfied with the list, you can set the time of observation between mount moves as the list Period from the "Planning/Set Period" menu entry (time given in [s]), and the method:
 
 ```matlab
 >>listPeriod(sc, 1800);
