@@ -497,13 +497,19 @@ classdef skychart < handle
     function listGrid(self, RA, DEC, n, da)
       % listGrid(sc): build a 3x3 grid around selection with step 0.75 deg.
       % listGrid(sc, RA, DEC, n, da): build a n x n grid around RA/DEC with angular step da
-      %   The angular step should be e.g. the field of view in order to build a 
-      %   panorama / stitch view.
+      %
+      %   The grid size can be given as n = [nDEC nRA] to specify a non-square grid
+      %   as well as similarly for the angular step da = [dDEC dRA]
+      %
+      %   The angular step should be e.g. the field of view (FOV) in order to 
+      %   build a panorama / stitch view.
       %   When using a focal length F with a camera sensor size S, the FOV is:
       %     FOV = S/F*57.3 [deg], where S and F should e.g. be in [mm]
       %
       %   With a 1200 mm focal length and an APS-C sensor 23.5x15.6, the FOV is:
-      %     FOV = 0.74 [deg]
+      %     FOV = 0.74 and 1.12 [deg]
+      %   With a 400 mm focal length and similar sensor:
+      %     FOV = 2.23 and 3.36 [deg]
       %     
       if nargin == 1
         if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC') 
@@ -526,10 +532,12 @@ classdef skychart < handle
         if nargin < 5, da = .75; end
         name = '';
       else return; end
-      if isfinite(n) && isfinite(da)
+      if all(isfinite(n)) && all(isfinite(da))
+        if isscalar(n),  n  = [n  n]; end
+        if isscalar(da), da = [da da]; end
         n = round(n);
-        for ra = RA+da*((0:(n-1))-(n-1)/2)
-          for dec = DEC+da*((0:(n-1))-(n-1)/2)
+        for dec = DEC+da(1)*((0:(n(1)-1))-(n(1)-1)/2)
+          for ra = RA+da(2)*((0:(n(2)-1))-(n(2)-1)/2)
             listAdd(self, ra, dec, ...
               sprintf('RA=%.2f DEC=%.2f %s', ra, dec, name));
           end

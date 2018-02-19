@@ -5,11 +5,20 @@ function plot_list(self)
   delete(findobj(self.figure, 'Tag','SkyChart_Selection'));
   
   % get current selection
-  toplot = [ self.selected self.list ];
-  if isempty(toplot), return; end
-  
-  RA = [ toplot.RA ];
-  DEC= [ toplot.DEC ];
+  RA = [];
+  DEC= [];
+  for index=0:numel(self.list)
+    if index==0
+      if ~isempty(self.selected)
+        RA(end+1)  = self.selected.RA;
+        DEC(end+1) = self.selected.DEC;
+      end
+    else
+      RA(end+1)  = self.list(index).RA;
+      DEC(end+1) = self.list(index).DEC;
+    end
+  end
+  if isempty(RA), return; end
   
   if ~isempty(RA)
     % compute Alt-Az and stereographic polar coords

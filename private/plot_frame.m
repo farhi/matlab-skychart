@@ -190,16 +190,16 @@ function MenuCallback(src, evnt)
     end
   case {'add grid around selected object','add grid around'}
     % request grid size / angular step
-    prompt = {'{\color{blue}Enter Grid size} (n x n)', ...
-              '{\color{blue}Enter Angular step} ([deg]) e.g. FOV=CameraSensor_mm/FocalLength_mm*57.3'};
+    prompt = {'{\color{blue}Enter Grid size} [n x n] or [n x m], e.g. "3 4" for DEC and RA', ...
+              '{\color{blue}Enter Angular step} ([deg]). FOV=CameraSensor_{mm}/FocalLength_{mm}*57.3 e.g. "0.75" or " 0.75 1.2" for DEC and RA'};
     name = 'SkyChart: Create Grid';
     options.Resize='on';
     options.WindowStyle='normal';
     options.Interpreter='tex';
     answer=inputdlg(prompt,name, 1, {'3','0.75'}, options);
     if ~isempty(answer)
-      n = str2double(answer{1});
-      da= str2double(answer{2});
+      n = str2num(answer{1});
+      da= str2num(answer{2});
       listGrid(sc, sc.selected, n, da);
     end
   case 'about skychart'

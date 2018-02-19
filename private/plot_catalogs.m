@@ -110,8 +110,6 @@ function ButtonDownCallback(src, evnt)
   xy = get(self.axes, 'CurrentPoint'); 
   x = xy(1,1); y = xy(1,2);
   
-  
-  
   % search for closest object in the corresponding catalogs
   found.dist=inf; found.catalog=''; ; found.index=[];
   % we try with the catalog for the given clicked handle, else try all
@@ -162,6 +160,8 @@ function ButtonDownCallback(src, evnt)
     set(uicm, 'Label', labels{index,2});
   end
   self.selected = found;
+  disp([ 'skychart: Selected ' labels{1,2} ' "' found.NAME '"' ]);
+  title(self.axes, [ 'Selected ' found.NAME '"' ]);
   
 end % ButtonDownCallback
 
