@@ -14,7 +14,9 @@ classdef skychart < handle
   %
   % >> sc = skychart
   %
-  % displays the view at the current UTC and location.
+  % displays the view at the current UTC and location. You can set the location with:
+  %
+  % >> sc.place=[ 10 -40 ]; compute(sc,'now'); plot(sc, 1);
   %
   % Methods (main):
   %   skychart:   create the view
@@ -44,6 +46,16 @@ classdef skychart < handle
   %
   % when scope is omitted, a connection with a Vixen StarBook is attempted. This
   % controler can be set in 'simulate' mode.
+  %
+  % Note: when behind a firewall, in order to get the initial GPS location, you may need to set
+  %   ProxyHost='proxy.ill.fr'; % Proxy address if you are behind a proxy [e.g. myproxy.mycompany.com or empty]
+  %   ProxyPort=8888;           % Proxy port if you are behind a proxy [8888 or 0 or empty]
+  %   java.lang.System.setProperty('http.proxyHost', ProxyHost); 
+  %   com.mathworks.mlwidgets.html.HTMLPrefs.setUseProxy(true);
+  %   com.mathworks.mlwidgets.html.HTMLPrefs.setProxyHost(ProxyHost);
+  %   java.lang.System.setProperty('http.proxyPort', num2str(ProxyPort));
+  %   com.mathworks.mlwidgets.html.HTMLPrefs.setProxyPort(num2str(ProxyPort));
+  % otherwise, the default locrion will be used, and can be changed afterwards.
   %
   % Credits:
   % E. Ofek     MAAT            GPL3 2004

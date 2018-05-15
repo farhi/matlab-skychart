@@ -31,7 +31,6 @@ function legend_h = plot_legend(self)
   % populate the legend
   legend_h = legend(handles);
   set(legend_h, 'TextColor','w','Color','none', ...
-    'Tag','SkyChart_legend', ...
-    'XColor','y', 'YColor','y');
+    'Tag','SkyChart_legend');
   
 end % plot_legend

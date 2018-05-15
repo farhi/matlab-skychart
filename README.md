@@ -30,6 +30,7 @@ displays the view at the current UTC and location. The location is obtained from
 
 ```matlab
 >> sc.place = [5.7 45.2]
+compute(sc,'now'); plot(sc,1)
 ```
 
 **Methods:**
@@ -113,7 +114,7 @@ will search for the given named object, and select it. Valid names include usual
 
 - Proper Name
 - StarID
-- HD (Haenry Draper)
+- HD (Henry Draper)
 - HR (Harvard Revised)
 - Gliese (Gliese Catalog of Nearby Stars)
 - BayerFlamsteed denomination (Fifth Edition of the Yale Bright Star Catalog)
@@ -172,6 +173,19 @@ Requirements/Installation
 
 Matlab, no external toolbox.
 Just copy the files and go into the directory. Then type commands above.
+
+When behind a proxy/firewall, in order to retrieve your GPS location, you may need to define the proxy host and port with e.g.:
+
+```matlab
+ProxyHost='proxy.ill.fr'; % Proxy address if you are behind a proxy [e.g. myproxy.mycompany.com or empty]
+ProxyPort=8888;           % Proxy port if you are behind a proxy [8888 or 0 or empty]
+
+java.lang.System.setProperty('http.proxyHost', ProxyHost); 
+com.mathworks.mlwidgets.html.HTMLPrefs.setUseProxy(true);
+com.mathworks.mlwidgets.html.HTMLPrefs.setProxyHost(ProxyHost);
+java.lang.System.setProperty('http.proxyPort', num2str(ProxyPort));
+com.mathworks.mlwidgets.html.HTMLPrefs.setProxyPort(num2str(ProxyPort));
+```
 
 Credits
 -------
