@@ -49,7 +49,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
           title="doc/SkyChart.png" src="SkyChart.png" alt="Image of
           SkyChart" style="box-sizing: content-box; border-style: none;
           max-width: 100%; background-color: rgb(255, 255, 255);"
-          border="0" height="607" width="583"></a></p>
+          height="607" width="583" border="0"></a></p>
     <h2 style="box-sizing: border-box; margin-top: 24px; margin-bottom:
       16px; font-size: 1.5em; font-weight: 600; line-height: 1.25;
       padding-bottom: 0.3em; border-bottom: 1px solid rgb(234, 236,
@@ -115,6 +115,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">This
 
+
       class computes and plots the sky seen at given location and time.
       About 43000 stars and 13000 deep sky objects are considered, as
       well as the Sun, the Moon and 7 planets. The actual number of
@@ -130,6 +131,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
+
 
       may zoom the plot using the Zoom tool (in the Toolbar). You may as
       well use the drag/pan tool to move the visible area. Right-click
@@ -173,6 +175,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">To
 
+
       use this code, type:</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
       border-box; margin-bottom: 16px; color: rgb(36, 41, 46);
@@ -200,10 +203,12 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">displays
 
+
       the view at the current UTC and location. The location is obtained
       from the closes network router (requires internet connection).
-      Else defaults to Grenoble. You can change the location by giving
-      its GPS coordinates with e.g. (in [deg]):</p>
+      Else defaults to Grenoble. You can change the location from the
+      menu SkyChart menu or by giving its GPS coordinates with e.g. (in
+      [deg]):</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
       border-box; margin-bottom: 16px; color: rgb(36, 41, 46);
       font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe
@@ -216,7 +221,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width:
       0px; text-decoration-style: initial; text-decoration-color:
       initial;">
-      <pre style="box-sizing: border-box; font-family: SFMono-Regular, Consolas, &quot;Liberation Mono&quot;, Menlo, Courier, monospace; font-size: 13.6px; margin-top: 0px; margin-bottom: 0px; word-wrap: normal; padding: 16px; overflow: auto; line-height: 1.45; background-color: rgb(246, 248, 250); border-radius: 3px; word-break: normal;">&gt;&gt; sc.place = [<span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">5.7</span> <span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">45.2</span>]</pre>
+      <pre style="box-sizing: border-box; font-family: SFMono-Regular, Consolas, &quot;Liberation Mono&quot;, Menlo, Courier, monospace; font-size: 13.6px; margin-top: 0px; margin-bottom: 0px; word-wrap: normal; padding: 16px; overflow: auto; line-height: 1.45; background-color: rgb(246, 248, 250); border-radius: 3px; word-break: normal;">&gt;&gt; sc.place = [<span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">5.7</span> <span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">45.2</span>]; compute(sc,'force'); plot(sc, 1);</pre>
     </div>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
       16px; color: rgb(36, 41, 46); font-family: -apple-system,
@@ -267,6 +272,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
 
+
       may force a re-computation and replot of the sky view with:</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
       border-box; margin-bottom: 16px; color: rgb(36, 41, 46);
@@ -310,6 +316,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
             0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31
             7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>The
 
+
       Chart view</h2>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
       16px; color: rgb(36, 41, 46); font-family: -apple-system,
@@ -322,6 +329,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">As
+
 
       seen above, the Chart view represent the visible sky, with stars
       and deep sky objects. The actual number of visible objects adapts
@@ -339,6 +347,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">The
+
 
       color of stars (filled circles) depend on their spectral type:</p>
     <ul style="box-sizing: border-box; padding-left: 2em; margin-top:
@@ -370,6 +379,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Deep
 
+
       sky objects are shown as empty circles:</p>
     <ul style="box-sizing: border-box; padding-left: 2em; margin-top:
       0px; margin-bottom: 16px; color: rgb(36, 41, 46); font-family:
@@ -400,6 +410,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">The
 
+
       intensity of the color matches the actual visible magnitude.</p>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
       16px; color: rgb(36, 41, 46); font-family: -apple-system,
@@ -412,6 +423,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">The
+
 
       plot can be closed without loosing its information, and
       re-opened/updated with:</p>
@@ -440,6 +452,7 @@ href="https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">The
+
 
       plot auto-updates on zoom and pan tools, as well as with
       Selections (see below).</p>
@@ -470,6 +483,7 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
             0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31
             7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Connecting
 
+
       to a Scope</h2>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
       16px; color: rgb(36, 41, 46); font-family: -apple-system,
@@ -482,6 +496,7 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
+
 
       may connect to a telescope mount using e.g.</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
@@ -510,6 +525,7 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">where
 
+
       'scope' should be an object with properties/methods:</p>
     <ul style="box-sizing: border-box; padding-left: 2em; margin-top:
       0px; margin-bottom: 16px; color: rgb(36, 41, 46); font-family:
@@ -526,8 +542,10 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
         mount status, and update the scope properties:</li>
       <li style="box-sizing: border-box; margin-top: 0.25em;">scope.gotoradec(RA,DEC):
 
+
         send the mount to location (RA,DEC)</li>
       <li style="box-sizing: border-box; margin-top: 0.25em;">properties:
+
 
         scope.ra.h, scope.ra.min, scope.dec.deg, scope.dec.min</li>
     </ul>
@@ -543,6 +561,7 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">when
 
+
       scope is omitted, a connection with a Vixen StarBook is attempted.
       This controler can be set in 'simulate' mode.</p>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
@@ -556,6 +575,7 @@ href="https://github.com/farhi/matlab-skychart#connecting-to-a-scope"
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Get
+
 
       the StarBook controller for Matlab at<span>&nbsp;</span><a
 href="https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control"
@@ -593,6 +613,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
             1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9
             13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a>Selecting
 
+
       objects and Planning observations</h2>
     <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
       16px; color: rgb(36, 41, 46); font-family: -apple-system,
@@ -605,6 +626,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Clicking
+
 
       on any visible object on the chart selects it. Right-click shows a
       contextual menu allowing, when connected, to send the mount
@@ -622,6 +644,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
+
 
       can also select objects from the "Planning/Find object..." menu
       item, or with the 'findobj' method:</p>
@@ -651,6 +674,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">will
 
+
       search for the given named object, and select it. Valid names
       include usual names (such as Betelgeuse, Rigel, Capella, Orion
       nebula, ...), as well as the major Catalogs such as:</p>
@@ -674,6 +698,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       <li style="box-sizing: border-box; margin-top: 0.25em;">Gliese
         (Gliese Catalog of Nearby Stars)</li>
       <li style="box-sizing: border-box; margin-top: 0.25em;">BayerFlamsteed
+
 
         denomination (Fifth Edition of the Yale Bright Star Catalog)</li>
       <li style="box-sizing: border-box; margin-top: 0.25em;">M
@@ -708,6 +733,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
 
+
       may alternatively add the target to the Planning list. This list
       can be editted, and you may remove some of its elements, or
       completely clear it (see the Planning menu). The current
@@ -724,6 +750,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">You
+
 
       can add objects to the list with the "Planning/Add Selected
       Object", or alternatively:</p>
@@ -753,6 +780,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">When
+
 
       a target is selected, you may create a rectangular grid around it,
       in order to plan a larger panorama view. The grid size can be
@@ -786,6 +814,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">which
 
+
       uses a 3x3 grid with angular step 0.75 deg. To change the grid
       size, use:</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
@@ -815,8 +844,10 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-decoration-style: initial; text-decoration-color: initial;">where<span>&nbsp;</span><strong
         style="box-sizing: border-box; font-weight: 600;">n</strong><span>&nbsp;</span>is
 
+
       the grid binning, e.g. [3 4], and<span>&nbsp;</span><strong
         style="box-sizing: border-box; font-weight: 600;">da</strong><span>&nbsp;</span>is
+
 
       the angular step between DEC and RA lines, e.g. [0.75 1.22] in
       [deg].</p>
@@ -831,6 +862,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Once
+
 
       you are satisfied with the list, you can set the time of
       observation between mount moves as the list Period from the
@@ -862,6 +894,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Then
 
+
       start the Planning with the "Planning/Start" menu entry, which can
       also be used to Pause/Stop. The same can be done with commands:</p>
     <div class="highlight highlight-source-matlab" style="box-sizing:
@@ -889,6 +922,7 @@ href="https://github.com/farhi/matlab-skychart#selecting-objects-and-planning-ob
       text-transform: none; white-space: normal; widows: 2;
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">which
+
 
       can be doubled to pause the execution.</p>
     <h2 style="box-sizing: border-box; margin-top: 24px; margin-bottom:
@@ -929,8 +963,86 @@ href="https://github.com/farhi/matlab-skychart#requirementsinstallation"
       word-spacing: 0px; -webkit-text-stroke-width: 0px;
       text-decoration-style: initial; text-decoration-color: initial;">Matlab,
 
+
       no external toolbox. Just copy the files and go into the
-      directory. Then type commands above.</p>
+      directory. Then type commands above.<br>
+    </p>
+    <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
+      16px; color: rgb(36, 41, 46); font-family: -apple-system,
+      BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial,
+      sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI
+      Emoji&quot;, &quot;Segoe UI Symbol&quot;; font-size: 16px;
+      font-style: normal; font-variant-ligatures: normal;
+      font-variant-caps: normal; font-weight: 400; letter-spacing:
+      normal; orphans: 2; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; widows: 2;
+      word-spacing: 0px; -webkit-text-stroke-width: 0px;
+      text-decoration-style: initial; text-decoration-color: initial;">When
+      behind a proxy/firewall, in order to retrieve your GPS location,
+      you may need to define the proxy host and port with e.g.:<br>
+    </p>
+    <p style="box-sizing: border-box; margin-top: 0px; margin-bottom:
+      16px; color: rgb(36, 41, 46); font-family: -apple-system,
+      BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial,
+      sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI
+      Emoji&quot;, &quot;Segoe UI Symbol&quot;; font-size: 16px;
+      font-style: normal; font-variant-ligatures: normal;
+      font-variant-caps: normal; font-weight: 400; letter-spacing:
+      normal; orphans: 2; text-align: start; text-indent: 0px;
+      text-transform: none; white-space: normal; widows: 2;
+      word-spacing: 0px; -webkit-text-stroke-width: 0px;
+      text-decoration-style: initial; text-decoration-color: initial;">
+      <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    </p>
+    <div class="highlight highlight-source-matlab" style="box-sizing:
+      border-box; margin-bottom: 16px; color: rgb(36, 41, 46);
+      font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe
+      UI&quot;, Helvetica, Arial, sans-serif, &quot;Apple Color
+      Emoji&quot;, &quot;Segoe UI Emoji&quot;, &quot;Segoe UI
+      Symbol&quot;; font-size: 16px; font-style: normal;
+      font-variant-ligatures: normal; font-variant-caps: normal;
+      font-weight: 400; letter-spacing: normal; orphans: 2; text-align:
+      start; text-indent: 0px; text-transform: none; white-space:
+      normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width:
+      0px; text-decoration-style: initial; text-decoration-color:
+      initial;">
+      <pre style="box-sizing: border-box; font-family: SFMono-Regular, Consolas, &quot;Liberation Mono&quot;, Menlo, Courier, monospace; font-size: 13.6px; margin-top: 0px; margin-bottom: 0px; word-wrap: normal; padding: 16px; overflow: auto; line-height: 1.45; background-color: rgb(246, 248, 250); border-radius: 3px; word-break: normal;">ProxyHost=<span class="pl-s" style="box-sizing: border-box; color: rgb(3, 47, 98);"><span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span>proxy.ill.fr<span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span></span>; <span class="pl-c" style="box-sizing: border-box; color: rgb(106, 115, 125);"><span class="pl-c" style="box-sizing: border-box; color: rgb(106, 115, 125);">%</span> Proxy address if you are behind a proxy [e.g. myproxy.mycompany.com or empty]</span>
+ProxyPort=<span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">8888</span>;           <span class="pl-c" style="box-sizing: border-box; color: rgb(106, 115, 125);"><span class="pl-c" style="box-sizing: border-box; color: rgb(106, 115, 125);">%</span> Proxy port if you are behind a proxy [8888 or 0 or empty]</span>
+
+java.lang.System.setProperty(<span class="pl-s" style="box-sizing: border-box; color: rgb(3, 47, 98);"><span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span>http.proxyHost<span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span></span>, ProxyHost); 
+com.mathworks.mlwidgets.html.HTMLPrefs.setUseProxy(<span class="pl-c1" style="box-sizing: border-box; color: rgb(0, 92, 197);">true</span>);
+com.mathworks.mlwidgets.html.HTMLPrefs.setProxyHost(ProxyHost);
+java.lang.System.setProperty(<span class="pl-s" style="box-sizing: border-box; color: rgb(3, 47, 98);"><span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span>http.proxyPort<span class="pl-pds" style="box-sizing: border-box; color: rgb(3, 47, 98);">'</span></span>, num2str(ProxyPort));
+com.mathworks.mlwidgets.html.HTMLPrefs.setProxyPort(num2str(ProxyPort));</pre>
+    </div>
+    The location can be changed afterwards from the SkyChart menu.<br>
+    <h2 style="box-sizing: border-box; margin-top: 24px; margin-bottom:
+      16px; font-size: 1.5em; font-weight: 600; line-height: 1.25;
+      padding-bottom: 0.3em; border-bottom: 1px solid rgb(234, 236,
+      239); color: rgb(36, 41, 46); font-family: -apple-system,
+      BlinkMacSystemFont, &quot;Segoe UI&quot;, Helvetica, Arial,
+      sans-serif, &quot;Apple Color Emoji&quot;, &quot;Segoe UI
+      Emoji&quot;, &quot;Segoe UI Symbol&quot;; font-style: normal;
+      font-variant-ligatures: normal; font-variant-caps: normal;
+      letter-spacing: normal; orphans: 2; text-align: start;
+      text-indent: 0px; text-transform: none; white-space: normal;
+      widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px;
+      text-decoration-style: initial; text-decoration-color: initial;"><a
+        id="user-content-credits" class="anchor" aria-hidden="true"
+        href="https://github.com/farhi/matlab-skychart#credits"
+        style="box-sizing: border-box; background-color: transparent;
+        color: rgb(3, 102, 214); text-decoration: none; float: left;
+        padding-right: 4px; margin-left: -20px; line-height: 1;"><svg
+          class="octicon octicon-link" viewBox="0 0 16 16" version="1.1"
+          width="16" height="16" aria-hidden="true"><path
+            fill-rule="evenodd" d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3
+            4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2
+            3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98
+            0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12
+            13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64
+            1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9
+            13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg></a></h2>
+    <br class="Apple-interchange-newline">
     <h2 style="box-sizing: border-box; margin-top: 24px; margin-bottom:
       16px; font-size: 1.5em; font-weight: 600; line-height: 1.25;
       padding-bottom: 0.3em; border-bottom: 1px solid rgb(234, 236,

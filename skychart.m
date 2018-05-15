@@ -16,7 +16,7 @@ classdef skychart < handle
   %
   % displays the view at the current UTC and location. You can set the location with:
   %
-  % >> sc.place=[ 10 -40 ]; compute(sc,'now'); plot(sc, 1);
+  % >> sc.place=[ 10 -40 ]; compute(sc,'force'); plot(sc, 1);
   %
   % Methods (main):
   %   skychart:   create the view
