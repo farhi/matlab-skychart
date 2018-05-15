@@ -29,6 +29,8 @@ function [sc, new] = plot_frame(sc)
     m = uimenu(h, 'Label', 'SkyChart');
     uimenu(m, 'Label', 'Compute For Given Time', ...
       'Callback', @MenuCallback, 'Accelerator','t');
+    uimenu(m, 'Label', 'Compute For Given Location', ...
+      'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Update To Current Time', ...
       'Callback', @MenuCallback, 'Accelerator','u');
     uimenu(m, 'Label', 'Refresh Plot', ...
@@ -139,6 +141,18 @@ function MenuCallback(src, evnt)
     if ~isempty(answer), date(sc, answer{1}); end
     compute(sc);
     plot(sc, 1);
+  case {'compute for given location'}
+    prompt = {'{\color{blue}Enter GPS location [deg]} (e.g. 5.5 45.2)'};
+    name = 'SkyChart: Set GPS location';
+    options.Resize='on';
+    options.WindowStyle='normal';
+    options.Interpreter='tex';
+    answer=inputdlg(prompt,name, 1, {num2str(sc.place)}, options);
+    if ~isempty(answer)
+      sc.place = str2num(answer{1});
+      compute(sc, 'now');
+      plot(sc, 1);
+    end
   case {'update', 'update to current time'}
     compute(sc,'now');
     plot(sc, 1);
