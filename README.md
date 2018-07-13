@@ -149,9 +149,18 @@ which uses a 3x3 grid with angular step 0.75 deg. To change the grid size, use:
 
 ```matlab
 >> listGrid(sc, sc.selected, n, da);
+>> listGrid(sc, sc.findobj('M 42'), n, da);
 ```
 
-where **n** is the grid binning, e.g. [3 4], and **da** is the angular step between DEC and RA lines, e.g. [0.75 1.22] in [deg].
+where **n** is the grid binning, e.g. [3 4], and **da** is the angular step between DEC and RA lines, e.g. [0.75 1.22] in [deg]. This step should be small enough to allow partial overlap of the mosaic grid images. When using a focal length F with a camera sensor size S, the field of view (FOV) is da=S/F*57.3 [deg], where S and F should e.g. be in [mm].
+
+With a 1200 mm focal length and an APS-C sensor 23.5x15.6, the FOV is:
+
+- da = 0.74 and 1.12 [deg]
+    
+With a 400 mm focal length and similar sensor:
+
+- da = 2.23 and 3.36 [deg]
 
 Once you are satisfied with the list, you can set the time of observation between mount moves as the list Period from the "Planning/Set Period" menu entry (time given in [s]), and the method:
 
