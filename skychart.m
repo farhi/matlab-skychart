@@ -323,6 +323,14 @@ classdef skychart < handle
       % findobj(sc, name): find a given object in catalogs. Select it.
       catalogs = fieldnames(self.catalogs);
       found = [];
+      
+      % check first for name without separator
+      if ~any(name == ' ')
+        [n1,n2]  = strtok(name, '0123456789');
+        found = findobj(self, [ n1 ' ' n2 ]);
+        if ~isempty(name) return; end
+      end
+      
       for f=catalogs(:)'
         catalog = self.catalogs.(f{1});
         if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
@@ -352,6 +360,7 @@ classdef skychart < handle
           break;
         end
       end
+
       if ~isempty(found)
         disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
       end
