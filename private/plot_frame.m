@@ -10,6 +10,7 @@ function [sc, new] = plot_frame(sc)
   if isempty(h) || ~ishandle(h)
     h = figure('Tag','SkyChart', ...
       'MenuBar','none', 'ToolBar','figure', ...
+      'WindowScrollWheelFcn', @ScrollWheelCallback, ...
       'CloseRequestFcn',@MenuCallback, 'UserData', sc);     
     
     % now create some menu entries
@@ -174,7 +175,7 @@ function MenuCallback(src, evnt)
       
       if ~isempty(found) && ishandle(sc.figure)
         % center plot on object and replot
-        if isfield(found, 'X')
+        if isfield(found, 'X') && found.X^2+found.Y^2 < 1
           figure(sc.figure);
           set(sc.axes, 'XLim', [found.X-.1 found.X+.1], ...
                        'YLim', [found.Y-.1 found.Y+.1]);
@@ -236,3 +237,16 @@ function MenuCallback(src, evnt)
     listPeriod(sc);
   end
 end % MenuCallback
+
+function ScrollWheelCallback(src, evnt)
+  % ScrollWheelCallback: callback to change speed/zoom with mouse wheel
+  
+  sc = get(gcbf,'UserData');
+  
+  if evnt.VerticalScrollCount > 0
+    zoom(gcbf, .5);
+  else
+    zoom(gcbf, 2);
+  end
+
+end % ScrollWheelCallback

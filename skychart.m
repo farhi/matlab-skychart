@@ -366,7 +366,11 @@ classdef skychart < handle
       if ~isempty(found)
         disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
       end
-      self.selected = found;
+      if found.X^2+found.Y^2 < 1
+        self.selected = found;
+      else
+        disp([ mfilename ': object ' name ' is not visible.' ])
+      end
     end
     
     function url=help(self)
