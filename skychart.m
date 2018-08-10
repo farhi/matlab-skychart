@@ -418,7 +418,7 @@ classdef skychart < handle
       %   dec is given in deg:min
       if nargin ==1
         if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC')
-          RA = self.selected.RA/15; % RA deg -> h
+          RA = self.selected.RA;
           DEC= self.selected.DEC;
         else return; end
       end
