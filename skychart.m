@@ -365,6 +365,8 @@ classdef skychart < handle
 
       if ~isempty(found)
         disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
+        disp(sprintf('  %s: Magnitude: %.1f Type: %s', ...
+          found.catalog, found.MAG, found.TYPE ));
       end
       if found.X^2+found.Y^2 < 1
         self.selected = found;
@@ -433,7 +435,7 @@ classdef skychart < handle
     
     % list/planning methods ----------------------------------------------------
     
-    function listAdd(self, RA, DEC, name)
+    function l = listAdd(self, RA, DEC, name)
       % listAdd(sc): add the last selected object to the List
       % listAdd(sc, name): search for name and add it to the List
       % listAdd(sc, RA,DEC, {name}): add RA/DEC to the List
@@ -460,6 +462,7 @@ classdef skychart < handle
       if ishandle(self.figure)
         plot(self, 1);
       end
+      l = self.selected;
     end % listAdd
     
     function listClear(self)
@@ -470,7 +473,7 @@ classdef skychart < handle
       end
     end % listClear
     
-    function listShow(self)
+    function l=listShow(self)
       % listShow(sc): show the current List
       
       ListString = {};
@@ -494,6 +497,7 @@ classdef skychart < handle
       if ishandle(self.figure)
         plot(self, 1);
       end
+      l = self.list;
     end % listShow
     
     function listRun(self)
@@ -521,9 +525,10 @@ classdef skychart < handle
       end
     end % listPeriod
     
-    function listGrid(self, RA, DEC, n, da)
+    function l=listGrid(self, RA, DEC, n, da)
       % listGrid(sc): build a 3x3 grid around selection with step 0.75 deg.
       % listGrid(sc, RA, DEC, n, da): build a n x n grid around RA/DEC with angular step da
+      % listGrid(sc, name   , n, da): build a n x n grid around named object
       %
       %   The grid size can be given as n = [nDEC nRA] to specify a non-square grid
       %   as well as similarly for the angular step da = [dDEC dRA]
@@ -538,39 +543,57 @@ classdef skychart < handle
       %   With a 400 mm focal length and similar sensor:
       %     FOV = 2.23 and 3.36 [deg]
       %     
-      if nargin == 1
-        if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC') 
-          RA = self.selected.RA;
-          DEC= self.selected.DEC;
-          name = self.selected.NAME;
-          da = 0.75; n=3;
-        else return; end
-      elseif isstruct(RA) && isfield(RA, 'RA') && isfield(RA, 'DEC')
-        if nargin < 4, da = 0.75; else da=n;  end
-        if nargin < 3, n = 3;     else n=DEC; end
-        self.selected = RA;
+      
+      l = [];
+      
+      if nargin < 2, RA =[]; end
+      if nargin < 3, DEC=[]; end
+      if nargin < 4, n  =[]; end
+      if nargin < 5, da =[]; end
+      name = '';
+      
+      % input as a name
+      if ischar(RA) RA = findobj(self, RA); end
+      
+      % input as a struct (from findobj)
+      if isstruct(RA) && isfield(RA, 'RA') && isfield(RA, 'DEC')
+        if nargin >= 4, da=n;  n=[]; end
+        if nargin >= 3, n=DEC; end
+        selected = RA;
+        if isempty(selected), return; end
+        RA = selected.RA;
+        DEC= selected.DEC;
+        name = selected.NAME;
+      end
+      
+      if isempty(RA)
         RA = self.selected.RA;
+        name = self.selected.NAME;
+      end
+      if isempty(DEC)
         DEC= self.selected.DEC;
-        if isfield(self.selected,'NAME')
-          name = self.selected.NAME;
-        else name = ''; end
-      elseif nargin >= 3 && isnumeric(RA) && isnumeric(DEC)
-        if nargin < 4, n  = 3; end
-        if nargin < 5, da = .75; end
-        name = '';
-      else return; end
+      end
+      if isempty(n), n=3;     end
+      if isempty(da) da=0.75; end
+      
+      % build the grid
       if all(isfinite(n)) && all(isfinite(da))
         if isscalar(n),  n  = [n  n]; end
         if isscalar(da), da = [da da]; end
         n = round(n);
         for dec = DEC+da(1)*((0:(n(1)-1))-(n(1)-1)/2)
           for ra = RA+da(2)*((0:(n(2)-1))-(n(2)-1)/2)
-            listAdd(self, ra, dec, ...
-              sprintf('RA=%.2f DEC=%.2f %s', ra, dec, name));
+            l = [ l listAdd(self, ra, dec, ...
+              sprintf('RA=%.2f DEC=%.2f %s', ra, dec, name)) ];
           end
         end
       end
     end % listGrid
+    
+    function l=grid(self, varargin)
+      % grid: build a grid around current selection
+      l=self.listGrid(self, varargin{:});
+    end
    
   end % methods
   
