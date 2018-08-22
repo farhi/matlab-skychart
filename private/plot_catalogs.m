@@ -60,7 +60,7 @@ function self = plot_catalogs(self)
         % in [deg] then in 0-1 then in pixels
         SZ2(index) = sz(index)/60/90*p/max([ diff(self.xlim) diff(self.ylim) ]);  
       end
-      SZ = max(SZ1.^(2*sz_fact), SZ2.^2);
+      SZ = max(SZ1(:).^(2*sz_fact), SZ2(:).^2);
       h = scatter(x,y, SZ, colour(typ,mag), 'o');
       mag(mag == 0) = 20; % disable show-names for the objects showing regions (mag=0)
       
