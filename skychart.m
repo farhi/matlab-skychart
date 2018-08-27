@@ -331,7 +331,7 @@ classdef skychart < handle
         if ~isempty(found) return; end
       end
       
-      namel= lower(name);
+      namel= strtrim(lower(name));
       for f=catalogs(:)'
         catalog = self.catalogs.(f{1});
         if ~isfield(catalog, 'X') || ~isfield(catalog, 'MAG'), continue; end
@@ -359,20 +359,29 @@ classdef skychart < handle
           found.MAG     = catalog.MAG(found.index);
           found.TYPE    = catalog.TYPE{found.index};
           found.NAME    = catalog.NAME{found.index};
+          found.DIST    = catalog.DIST(found.index);
           break;
         end
       end
 
       if ~isempty(found)
         disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
-        disp(sprintf('  %s: Magnitude: %.1f Type: %s', ...
-          found.catalog, found.MAG, found.TYPE ));
-      end
-      if found.X^2+found.Y^2 < 1
-        self.selected = found;
+        if found.DIST > 0
+          disp(sprintf('  %s: Magnitude: %.1f ; Type: %s ; Dist: %.3g [ly]', ...
+            found.catalog, found.MAG, found.TYPE, found.DIST*3.262 ));
+        else
+          disp(sprintf('  %s: Magnitude: %.1f;  Type: %s', ...
+            found.catalog, found.MAG, found.TYPE ));
+        end
+        if found.X^2+found.Y^2 < 1
+          self.selected = found;
+        else
+          disp([ mfilename ': object ' name ' is not visible.' ])
+        end
       else
-        disp([ mfilename ': object ' name ' is not visible.' ])
+        disp([ mfilename ': object ' name ' was not found.' ])
       end
+      
     end
     
     function url=help(self)
