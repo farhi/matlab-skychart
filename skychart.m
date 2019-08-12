@@ -78,6 +78,8 @@ classdef skychart < handle
     update_time = 0;      % local time of last computation
     update_period = 120;  % in seconds
     figure    = [];
+    figure_insert = false;
+    axes_insert   = false;
     axes      = [];
     telescope = [];
     xlim      = [0 0];
@@ -114,8 +116,24 @@ classdef skychart < handle
   end % properties
   
   methods
-    function sc = skychart
-      
+    function sc = skychart(varargin)
+    
+      % handle input name/value argument pairs
+      if mod(nargin,2) == 0 % name/value pairs
+        for index=1:2:numel(varargin)
+          switch varargin{index}
+          case {'axis','axes'}
+            sc.axes = varargin{index+1};
+            sc.axes_insert   = true;
+          case 'figure'
+            sc.figure = varargin{index+1};
+            sc.figure_insert = true;
+          case 'catalogs'
+            sc.catalogs = varargin{index+1};
+          end
+        end
+      end
+
       % load catalogs
       load(sc);
       
@@ -138,7 +156,10 @@ classdef skychart < handle
     function load(self)
       % load catalogs: objects, stars
       disp([ mfilename ': Welcome ! Loading Catalogs:' ]);
-      self.catalogs = load(mfilename);
+      
+      if isempty(self.catalogs)
+        self.catalogs = load(mfilename);
+      end
       
       % create planet catalog with empty coordinates
       self.catalogs.planets = struct('Description','Planets - http://wise-obs.tau.ac.il/~eran/matlab.html','RA',1:9);
@@ -268,7 +289,7 @@ classdef skychart < handle
       
       if self.plotting, return; end
       if nargin < 2, force = false; end
-      if isempty(self.figure) || ~ishandle(self.figure), force=true; end
+      if isempty(self.figure) || ~ishandle(self.figure) || self.figure_insert, force=true; end
       
       self.plotting = true;
       % create or get current figure. Sets fig focus
@@ -315,7 +336,7 @@ classdef skychart < handle
       if ~isempty(self.timer) && isvalid(self.timer)
         stop(self.timer); 
       end
-      if ishandle(self.figure); delete(self.figure); end
+      if ishandle(self.figure) && ~self.figure_insert; delete(self.figure); end
       self.figure = []; self.axes = []; self.plotting = false;
     end
     

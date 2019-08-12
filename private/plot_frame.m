@@ -1,13 +1,17 @@
 function [sc, new] = plot_frame(sc)
   % plot_frame: plot the chart frame (horizon), return the handle and x/y limits
 
+  % FIGURE ---------------------------------------------------------------------
   if ishandle(sc.figure)
     h = sc.figure;
   else 
     h = findall(0, 'Tag','SkyChart'); 
   end
   if numel(h) > 1, delete(h(2:end)); h = h(1); end
-  if isempty(h) || ~ishandle(h)
+  create_figure = isempty(h) || ~ishandle(h); % true = figure does not exist
+
+  % we need to open a new figure when none exists and not re-using an existing one
+  if create_figure
     h = figure('Tag','SkyChart', ...
       'MenuBar','none', 'ToolBar','figure', ...
       'WindowScrollWheelFcn', @ScrollWheelCallback, ...
@@ -64,6 +68,22 @@ function [sc, new] = plot_frame(sc)
     uimenu(m, 'Label', 'Start/Stop Execution', ...
       'Callback', @MenuCallback, 'Separator','on');
       
+    sc.figure = h;
+  end
+  
+  % activate figure
+  set(0, 'CurrentFigure', sc.figure);
+  
+  % AXIS -----------------------------------------------------------------------
+  if ishandle(sc.axes)
+    h = sc.axes;
+  else 
+    h = findall(0, 'Tag','SkyChart_Axes'); 
+  end
+  if numel(h) > 1, delete(h(2:end)); h = h(1); end
+  create_axes = isempty(h) || ~ishandle(h); % true = axis does not exist
+  
+  if create_axes || sc.axes_insert % plot new axes also when re-using an existing axis
     % plot horizon NSEW
     %--- Horizon ---
     Theta = (0:5:360)';
@@ -86,8 +106,7 @@ function [sc, new] = plot_frame(sc)
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
     
-    sc.figure = h;
-    sc.axes   = gca; % where to send plots
+    sc.axes   = gca; % new axis where to send plots
     set(sc.axes, 'Tag','SkyChart_Axes');
     
     % start the update timer (when replotting after creation)
@@ -97,11 +116,6 @@ function [sc, new] = plot_frame(sc)
   else
     new       = false;
   end
-  if isempty(sc.axes) || ~ishandle(sc.axes)
-    sc.axes = findall(0, 'Tag','SkyChart_Axes');
-  end
-  % select figure and axes, but not raise
-  set(0, 'CurrentFigure', sc.figure);
 
 end % plot_frame
 
