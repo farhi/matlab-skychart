@@ -11,26 +11,29 @@ function [sc, new] = plot_frame(sc)
   create_figure = isempty(h) || ~ishandle(h); % true = figure does not exist
 
   % we need to open a new figure when none exists and not re-using an existing one
-  if create_figure
-    h = figure('Tag','SkyChart', ...
-      'MenuBar','none', 'ToolBar','figure', ...
-      'WindowScrollWheelFcn', @ScrollWheelCallback, ...
-      'CloseRequestFcn',@MenuCallback, 'UserData', sc);     
-    
-    % now create some menu entries
-    % figure menus
-    m = uimenu(h, 'Label', 'File');
-    
-    uimenu(m, 'Label', 'Save',        ...
-      'Callback', 'filemenufcn(gcbf,''FileSave'')','Accelerator','s');
-    uimenu(m, 'Label', 'Save As...',        ...
-      'Callback', 'filemenufcn(gcbf,''FileSaveAs'')');
-    uimenu(m, 'Label', 'Print',        ...
-      'Callback', 'printdlg(gcbf)');
-    uimenu(m, 'Label', 'Close',        ...
-      'Callback', @MenuCallback, ...
-      'Accelerator','w', 'Separator','on');
+  if create_figure || sc.figure_insert
+  
+    if ~sc.figure_insert
+      h = figure('Tag','SkyChart', ...
+        'MenuBar','none', 'ToolBar','figure', ...
+        'WindowScrollWheelFcn', @ScrollWheelCallback, ...
+        'CloseRequestFcn',@MenuCallback, 'UserData', sc);     
       
+      % now create some menu entries
+      % figure menus
+      m = uimenu(h, 'Label', 'File');
+    
+      uimenu(m, 'Label', 'Save',        ...
+        'Callback', 'filemenufcn(gcbf,''FileSave'')','Accelerator','s');
+      uimenu(m, 'Label', 'Save As...',        ...
+        'Callback', 'filemenufcn(gcbf,''FileSaveAs'')');
+      uimenu(m, 'Label', 'Print',        ...
+        'Callback', 'printdlg(gcbf)');
+      uimenu(m, 'Label', 'Close',        ...
+        'Callback', @MenuCallback, ...
+        'Accelerator','w', 'Separator','on');
+      end
+    
     m = uimenu(h, 'Label', 'SkyChart');
     uimenu(m, 'Label', 'Compute For Given Time', ...
       'Callback', @MenuCallback, 'Accelerator','t');
@@ -69,6 +72,7 @@ function [sc, new] = plot_frame(sc)
       'Callback', @MenuCallback, 'Separator','on');
       
     sc.figure = h;
+    sc.figure_insert = false;
   end
   
   % activate figure
@@ -107,12 +111,14 @@ function [sc, new] = plot_frame(sc)
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
     
     sc.axes   = gca; % new axis where to send plots
+    sc.axes_insert = false;
     set(sc.axes, 'Tag','SkyChart_Axes');
     
     % start the update timer (when replotting after creation)
     if ~isempty(sc.timer) && isvalid(sc.timer) && strcmp(sc.timer.Running, 'off')
       start(sc.timer);
     end
+    
   else
     new       = false;
   end
