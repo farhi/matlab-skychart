@@ -104,7 +104,12 @@ function ButtonDownCallback(src, evnt)
   % ButtonDownCallback: callback when user clicks on the StarBook image
 
   % get the SkyChart object handle
-  self=get(gcbf, 'UserData');
+  h = findall(0, 'Tag','SkyChart_Axes');
+  if numel(h) > 1, delete(h(2:end)); h=h(1); end
+  if isempty(h) || ~ishandle(h)
+    return
+  end
+  self=get(h, 'UserData');
   
   % where the mouse click is
   xy = get(self.axes, 'CurrentPoint'); 
@@ -169,8 +174,12 @@ function MenuCallback(src, evnt)
   % MenuCallback: callback from UIContext Menu (right click on object/star)
   
   % get the last selected target
-  self=get(gcbf, 'UserData');
-  
+  h = findall(0, 'Tag','SkyChart_Axes');
+  if numel(h) > 1, delete(h(2:end)); h=h(1); end
+  if isempty(h) || ~ishandle(h)
+    return
+  end
+  self=get(h, 'UserData');
   
   switch lower(get(src, 'Label'))
   case 'send scope here now'

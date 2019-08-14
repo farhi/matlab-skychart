@@ -32,7 +32,7 @@ function [sc, new] = plot_frame(sc)
       uimenu(m, 'Label', 'Close',        ...
         'Callback', @MenuCallback, ...
         'Accelerator','w', 'Separator','on');
-      end
+    end
     
     m = uimenu(h, 'Label', 'SkyChart');
     uimenu(m, 'Label', 'Compute For Given Time', ...
@@ -45,16 +45,13 @@ function [sc, new] = plot_frame(sc)
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Reset Plot', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Help', 'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'About SkyChart', 'Callback', @MenuCallback, ...
-      'Separator','on');
-      
-    m = uimenu(h, 'Label', 'Scope');
     uimenu(m, 'Label', 'Connect to Scope', ...
-      'Callback', @MenuCallback);
+      'Callback', @MenuCallback, 'Separator','on');
     uimenu(m, 'Label', 'GOTO Selected Object', ...
       'Callback', @MenuCallback);
-      
+    uimenu(m, 'Label', 'Help', 'Callback', @MenuCallback, 'Separator','on');
+    uimenu(m, 'Label', 'About SkyChart', 'Callback', @MenuCallback);
+
     m = uimenu(h, 'Label', 'Planning');
     uimenu(m, 'Label', 'Find object...', ...
       'Callback', @MenuCallback);
@@ -105,14 +102,14 @@ function [sc, new] = plot_frame(sc)
     text(1+Offset,         0,              'W', 'Color','b');
     set(gca,'XTick',[],'YTick',[], 'Color','k');
     new = true;
-      
+
+    sc.axes   = gca; % new axis where to send plots
+    sc.axes_insert = false;
+    set(sc.axes, 'Tag','SkyChart_Axes','UserData', sc);
+    
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
-    
-    sc.axes   = gca; % new axis where to send plots
-    sc.axes_insert = false;
-    set(sc.axes, 'Tag','SkyChart_Axes');
     
     % start the update timer (when replotting after creation)
     if ~isempty(sc.timer) && isvalid(sc.timer) && strcmp(sc.timer.Running, 'off')
@@ -127,7 +124,7 @@ end % plot_frame
 
 function axesLimitsCallback(src, evnt)
   % axesLimitsCallback: trigered when a zoom/pan was used
-  h    = findall(0, 'Tag','SkyChart');
+  h    = findall(0, 'Tag','SkyChart_Axes');
   if numel(h) > 1, delete(h(2:end)); h=h(1); end
   if isempty(h) || ~ishandle(h)
     return
@@ -141,7 +138,12 @@ end
 function MenuCallback(src, evnt)
   % MenuCallback: execute callback from menu.
   %   the action depends on the src Label (uimenu)
-  sc = get(gcbf,'UserData');
+  h = findall(0, 'Tag','SkyChart_Axes');
+  if numel(h) > 1, delete(h(2:end)); h=h(1); end
+  if isempty(h) || ~ishandle(h)
+    return
+  end
+  sc = get(h,'UserData');
   try
     lab = get(src, 'Label');
   catch
@@ -261,12 +263,17 @@ end % MenuCallback
 function ScrollWheelCallback(src, evnt)
   % ScrollWheelCallback: callback to change speed/zoom with mouse wheel
   
-  sc = get(gcbf,'UserData');
+  h = findall(0, 'Tag','SkyChart_Axes');
+  if numel(h) > 1, delete(h(2:end)); h=h(1); end
+  if isempty(h) || ~ishandle(h)
+    return
+  end
+  sc = get(h,'UserData');
   
   if evnt.VerticalScrollCount > 0
-    zoom(gcbf, .5);
+    zoom(sc.axes, .5);
   else
-    zoom(gcbf, 2);
+    zoom(sc.axes, 2);
   end
 
 end % ScrollWheelCallback

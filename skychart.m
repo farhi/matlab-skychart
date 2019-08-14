@@ -336,7 +336,7 @@ classdef skychart < handle
       if ~isempty(self.timer) && isvalid(self.timer)
         stop(self.timer); 
       end
-      if ishandle(self.figure) && ~self.figure_insert; delete(self.figure); end
+      if ~isempty(self.figure) && ishandle(self.figure) && ~self.figure_insert, delete(self.figure); end
       self.figure = []; self.axes = []; self.plotting = false;
     end
     
@@ -511,7 +511,7 @@ classdef skychart < handle
       for index=1:numel(self.list)
         ListString{end+1} = self.list(index).NAME;
       end
-      disp([ mfilename ': Current List with Period ' num2str(self.list_period) ' [s] betwen items' ])
+      disp([ mfilename ': Current List with Period ' num2str(self.list_period) ' [s] between items' ])
       disp(char(ListString))
       if ~isempty(ListString)
         [selection, ok] = listdlg('PromptString', ...
