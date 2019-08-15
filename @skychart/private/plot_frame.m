@@ -187,7 +187,7 @@ function MenuCallback(src, evnt)
     set(sc.axes, 'XLim', [-1 1], 'YLim', [-1 1]);
   case {'find','find object...'}
     % find an object from its name
-    prompt = {'{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224. Use spaces between Catalog Name and ID. Known Catalogs include: StarID, HD, HR, M, NGC, IC, ...'};
+    prompt = {'{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224, Venus. Use spaces between Catalog Name and ID. Known Catalogs include: Planets, StarID, HD, HR, M, NGC, IC, ...'};
     name = 'SkyChart: Find Object';
     options.Resize='on';
     options.WindowStyle='normal';
@@ -207,7 +207,7 @@ function MenuCallback(src, evnt)
       end
     end
   case 'connect to scope'
-    % instantiate a StarBook object
+    % instantiate a mount object
     connect(sc);
   case {'send scope to selected object','goto selected object'}
     goto(sc);

@@ -25,17 +25,17 @@ function planets = compute_planets(planets, julianday, place)
     planets.TYPE = {};
     planets.NAME = {};
   end
-    
 
+  au = 149597870;     % km
   for index=1:numel(Labels)
     RA = ''; Coo=[];
     switch Labels{index}
     case 'Sun'
       [RA, Dec]  = suncoo(julianday,'a');
-      Mag = -26; Dist = 149597870700; %km
+      Mag = -26; Dist = 149597870.7/au; %au
     case 'Moon'
       [RA, Dec] = mooncool(julianday,place,'b');
-      Mag = -5; Dist = 384400; % km
+      Mag = -5; Dist = 384400/au; % au
     case 'Mercury'
       [Coo,Dist,Ang,Mag] = planet_lowephem(julianday, ...
         'Mercury','Earth','SphericEq','date');

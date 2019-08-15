@@ -96,7 +96,7 @@ classdef skychart < handle
     % Each named catalog entry has fields:
     %  RA:    Right Ascension in deg
     %  DEC:   Declinaison in deg
-    %  DIST:  Distance Mpc for objects, pc for stars
+    %  DIST:  Distance pc for objects and stars, au for planets.
     %  MAG:   Visual magnitude
     %  TYPE:  star (O B A F G K M), planet, galaxy, open cluster, ...
     %  NAME:  Usual name; Can be a cellstr or string
@@ -388,9 +388,14 @@ classdef skychart < handle
 
       if ~isempty(found)
         disp([ mfilename ': Selecting object ' name ' as: ' found.NAME ])
+        switch found.catalog
+        case {'deep_sky_objects','stars'}, un='ly'; found.DIST = found.DIST*3.26;
+        case 'planets', un='a.u.';
+        otherwise, un='??';
+        end
         if found.DIST > 0
-          disp(sprintf('  %s: Magnitude: %.1f ; Type: %s ; Dist: %.3g [ly]', ...
-            found.catalog, found.MAG, found.TYPE, found.DIST*3.262 ));
+          disp(sprintf('  %s: Magnitude: %.1f ; Type: %s ; Dist: %.3g [%s]', ...
+            found.catalog, found.MAG, found.TYPE, found.DIST, un ));
         else
           disp(sprintf('  %s: Magnitude: %.1f ; Type: %s', ...
             found.catalog, found.MAG, found.TYPE ));
