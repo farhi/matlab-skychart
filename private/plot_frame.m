@@ -74,6 +74,7 @@ function [sc, new] = plot_frame(sc)
   
   % activate figure
   set(0, 'CurrentFigure', sc.figure);
+  set(sc.figure, 'Renderer', 'Zbuffer')
   
   % AXIS -----------------------------------------------------------------------
   if ishandle(sc.axes)

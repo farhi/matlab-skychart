@@ -640,7 +640,9 @@ function TimerCallback(src, evnt)
   if isvalid(sc), 
     % update: compute and plot
     compute(sc);
-    plot(sc);
+    if ~isempty(sc.figure) && ishandle(sc.figure) && ishandle(sc.axes)
+      plot(sc);
+    end
     
     % look if we are running a list
     if sc.list_start
