@@ -1,9 +1,6 @@
 classdef skychart < handle
-  % SKYCHART: a class to plot a sky chart with stars/objects.
-  % Version: 19.08. Download at https://github.com/farhi/matlab-skychart.
+  % SKYCHART: a class to plot a sky chart with stars/objects
   %
-  % Purpose
-  % =======
   % This class computes and plots the sky seen at given location and time. About
   % 43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
   % Moon and 7 planets. The actual number of rendered objects depends on the zoom 
@@ -13,25 +10,24 @@ classdef skychart < handle
   % use the drag tool to move the visible area. Right-click shows a contextual
   % menu with the under-lying object properties (coordinates, type, ...).
   %
-  % Usage
-  % =====
   % To use this code, type
   %
-  % >> sc = skychart
+  % >> sc = skychart;
   %
-  % displays the view at the current UTC and location. You can set the location with:
+  % displays the view at the current UTC and location. 
+  % You can set the location (in deg) with:
   %
   % >> sc.place=[ 10 -40 ]; compute(sc,'force'); plot(sc, 1);
   %
-  % Methods (main)
-  % ==============
-  %   skychart:   create the view
-  %   date:       set/get the date (UTC)
-  %   getplace:   get the current GPS location from the network
-  %   plot:       plot/replot the view.
-  %   connect:    connect to a scope controler
-  %   goto:       send connected scope to selected location
-  %   findobj:    search for a named object and select it
+  % Main Methods
+  % ============
+  % - skychart:   create the view.
+  % - date:       set/get the date (UTC).
+  % - getplace:   get the current GPS location from the network.
+  % - plot:       plot/replot the view.
+  % - connect:    connect to a scope controler.
+  % - goto:       send connected scope to selected location.
+  % - findobj:    search for a named object and select it.
   %
   % You may force a re-computation and replot of the sky view with:
   %
@@ -45,13 +41,12 @@ classdef skychart < handle
   % >> connect(sc, scope)
   %
   % where 'scope' should be an object with methods:
-  %
-  %   getstatus: read the mount status, and update the scope properties:
-  %              scope.ra.h, scope.ra.min, scope.dec.deg, scope.dec.min
-  %   gotoradec(RA,DEC): send the mount to location (RA,DEC)
-  %
-  % when scope is omitted, a connection with a Vixen StarBook is attempted. This
-  % controler can be set in 'simulate' mode.
+  % - goto(sc,RA,DEC):  sends the mount to location (RA,DEC)
+  % - get_ra( sc):      returns the RA coordinate as [HH MM SS]
+  % - get_dec(sc):      returns the DEC coordinate as [DD MM SS]
+  % - get_ra( sc,'target'):      returns the target RA coordinate as [HH MM SS] (optional)
+  % - get_dec(sc,'target'):      returns the target DEC coordinate as [DD MM SS] (optional)
+  % - get_state(sc):    returns the mount state, e.g. MOVING, TRACKING (optional)
   %
   % Note: when behind a firewall, in order to get the initial GPS location, you may need to set
   %   ProxyHost='proxy.ill.fr'; % Proxy address if you are behind a proxy [e.g. myproxy.mycompany.com or empty]
@@ -61,9 +56,10 @@ classdef skychart < handle
   %   com.mathworks.mlwidgets.html.HTMLPrefs.setProxyHost(ProxyHost);
   %   java.lang.System.setProperty('http.proxyPort', num2str(ProxyPort));
   %   com.mathworks.mlwidgets.html.HTMLPrefs.setProxyPort(num2str(ProxyPort));
-  % otherwise, the default locrion will be used, and can be changed afterwards.
+  % otherwise, the default location will be used, but can be changed afterwards.
   %
-  % Credits:
+  % Credits
+  % =======
   % E. Ofek     MAAT            GPL3 2004
   %   http://weizmann.ac.il/home/eofek/matlab/ 
   % F. Glineur  parse_json      BSD  2009
@@ -72,32 +68,32 @@ classdef skychart < handle
   %   https://fr.mathworks.com/matlabcentral/fileexchange/22295-local-time-to-utc
   % Stars (~46000) data base  from http://astrosci.scimuze.com/stellar_data.htm
   % Deep sky objects (~13000) from http://klima-luft.de/steinicke/ngcic/ngcic_e.htm
-  % Vixen StarBook controller for Matlab at https://github.com/farhi/matlab-starbook.
-  % Avalon StarGo controller at https://github.com/farhi/matlab-stargo.
+  % StarBook (Vixen) https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control
 
   
   properties
-  
-    catalogs  = {};       % contains data bases as a cell of struct
-    utc       = [];       % UTC
-    place     = [];       % [ long lat in deg ]
-    julianday = 0;
-    update_time = 0;      % local time of last computation
-    update_period = 120;  % in seconds
-    figure    = [];
-    figure_insert = false;
-    axes_insert   = false;
-    axes      = [];
-    telescope = [];
-    xlim      = [0 0];
-    ylim      = [0 0];
-    timer     = [];
-    selected  = [];
-    list      = [];       % a list of selected objects
-    list_start= 0;        % start time when reading the list
-    list_period = 1800;   % time between list/planning GOTO actions
-    plotting  = false;
-    UserData  = [];
+
+    catalogs  = [];       % Contains data bases as a cell of struct.
+    utc       = [];       % The UTC offset (time-zone, daylight saving) in hours.
+    place     = [];       % The current observation [ longitude latitude ] in deg.
+    julianday = 0;        % The date/time in Julian calendar.
+    update_time = 0;      % The local time of last computation.
+    update_period = 120;  % The chart re-computation interval in seconds.
+    figure    = [];       % The figure showing the Chart.
+    figure_insert = false;% True when inserting the Chart in an existing figure.
+    axes_insert   = false;% True when inserting the Chart in an existing axis.
+    axes      = [];       % The axis showing the Chart.
+    telescope = [];       % The handle to the connected Scope.
+    xlim      = [0 0];    % The current X axis limits.
+    ylim      = [0 0];    % The current Y axis limits.
+    timer     = [];       % The update timer.
+    selected  = [];       % The last selected/searched object.
+    list      = [];       % The list of selected objects.
+    list_start= 0;        % The start time when running the list.
+    list_period = 1800;   % The time interval between list/planning GOTO actions in seconds.
+    plotting  = false;    % True when plotting
+    UserData  = [];       % Open for any further storage from User
+    update_counter = 0;   % A counter to automatically replot all after e.g. 10 min.
     
     % catalogs is a struct array of single catalog entries.
     % Each named catalog entry has fields:
@@ -119,13 +115,21 @@ classdef skychart < handle
     %  visible = (X in xlim, Y in ylim, Alt > 0 and Alt,Az inpolygon(user))
     %
     % We use: catalogs = struct(stars, deepskyobjects, planets)
-    
   end % properties
   
   methods
     function sc = skychart(varargin)
-    
+      % SKYCHART Create a SkyChart View.
+      %   SKYCHART alone creates a view.
+      %
+      %   SKYCHART('Property', value, ...) specifies how to create the View.
+      %   SKYCHART('figure',f) inserts the SkyChart view into the given figure.
+      %   SKYCHART('axes',a)   inserts the SkyChart view into the given axes.
+      %   SKYCHART('location',[ longitude latitude ]) specifies the GPS 
+      %   location in [deg].
+      
       % handle input name/value argument pairs
+      flag_set_location = false;
       if mod(nargin,2) == 0 % name/value pairs
         for index=1:2:numel(varargin)
           switch varargin{index}
@@ -137,15 +141,18 @@ classdef skychart < handle
             sc.figure_insert = true;
           case 'catalogs'
             sc.catalogs = varargin{index+1};
+          case {'location','site','place'}
+            sc.place = varargin{index+1};
           end
         end
       end
-
-      % load catalogs
-      load(sc);
+      
+      if isempty(sc.catalogs)
+        sc.catalogs = getcatalogs;
+      end
       
       % populate with starting stuff
-      getplace(sc);
+      if isempty(sc.place), getplace(sc); end
       
       % update all and compute Alt/Az, X/Y coordinates
       compute(sc, 'now');
@@ -159,45 +166,14 @@ classdef skychart < handle
       set(sc.timer, 'UserData', sc);
       start(sc.timer);
     end % skychart
-    
-    function load(self)
-      % load catalogs: objects, stars
-      disp([ mfilename ': Welcome ! Loading Catalogs:' ]);
-      
-      if isempty(self.catalogs)
-        self.catalogs = load(mfilename);
-      end
-      
-      % create planet catalog with empty coordinates
-      self.catalogs.planets = struct('Description','Planets - http://wise-obs.tau.ac.il/~eran/matlab.html','RA',1:9);
-      
-      % display available catalogs
-      for f=fieldnames(self.catalogs)'
-        name = f{1};
-        if ~isempty(self.catalogs.(name))
-          num  = numel(self.catalogs.(name).RA);
-          if isfield(self.catalogs.(name), 'Description')
-            desc = self.catalogs.(name).Description;
-          else desc = ''; end
-          disp([ mfilename ': ' name ' with ' num2str(num) ' entries.' ]);
-          disp([ '  ' desc ])
-        end
-      end
-    end % load
    
     function getplace(self, sb)
-      % getplace(sc): get the location
-      % getplace(sc, [lon lat]): set location in deg
-      % getplace(sc, starbook): set location from StarBook
-      if nargin > 1 && isa(sb, 'starbook')
-        p = sb.place;
-        e = double(p{2})+double(p{3})/60;
-        if p{1} == 'W', e=-e; end
-        n = double(p{5})+double(p{6})/60;
-        if p{4} == 'S', n=-n; end
-        self.place = [ n e ];
-        disp([ mfilename ': Using location from Vixen StarBook [long lat]=' mat2str(self.place) ]);
-      elseif nargin > 1 && isnumeric(sb) && numel(sb) == 2
+      % GETPLACE Get the current location.
+      %   GETPLACE(sc) requests location from the Network.
+      %
+      %   GETPLACE(sc, [lon lat]) sets location given in degrees.
+
+      if nargin > 1 && isnumeric(sb) && numel(sb) == 2
         self.place = sb;
       else % use ip-api to get the location from the IP
         try
@@ -213,8 +189,10 @@ classdef skychart < handle
     end % getplace
    
     function d=date(self, utc)
-      % date(sc):      get the current UTC
-      % date(sc, UTC): sets the date as given UTC
+      % DATE Get the current UTC date.
+      %   DATE(sc) sets the current time from the clock.
+      %
+      %   DATE(sc, UTC) sets the date as given UTC (string, number, vector).
       if nargin > 1 && ~isempty(utc)
         if strcmp(utc, 'now')
           self.utc = local_time_to_utc(now);
@@ -234,11 +212,15 @@ classdef skychart < handle
       d = self.utc;
     end % date
     
-    function compute(self, utc)
-      % compute(sc):          compute and update all catalogs
-      % compute(sc, utc):     the same, but for a given UTC
-      % compute(sc, 'now'):   update UTC to now, and force compute
-      % compute(sc, 'force'): force to compute for previously set date/time
+    function ret = compute(self, utc)
+      % COMPUTE Compute position of objects for all catalogs.
+      %   COMPUTE(sc) updates only when time has changed significantly (2 min).
+      %
+      %   COMPUTE(sc, utc)     the same, but for a given UTC.
+      %
+      %   COMPUTE(sc, 'now')   update UTC to now, and force computation.
+      %
+      %   COMPUTE(sc, 'force') force to compute for previously set date/time.
       
       if nargin < 2, utc = []; end
     
@@ -273,13 +255,14 @@ classdef skychart < handle
         [catalog.Az, catalog.Alt] = radec2altaz(catalog.RA, catalog.DEC, ...
           self.julianday, self.place);
         % compute the stereographic polar coordinates
+        delta_az = 0;
         [catalog.X, catalog.Y]    = pr_stereographic_polar( ...
-          catalog.Az+90, catalog.Alt);
+          catalog.Az+90-delta_az, catalog.Alt);
           
         % special case for constellations: compute lines for patterns
         if strcmp(f{1}, 'constellations')
           catalog = compute_constellations(catalog, ...
-            self.julianday, self.place);
+            self.julianday, self.place, delta_az);
         end
           
         % update catalog
@@ -289,11 +272,18 @@ classdef skychart < handle
       end
       
       self.update_time = self.julianday;
+      ret = self.update_time;
     end % compute
     
     function h = plot(self, force)
-      % plot(sc): plot the sky chart
+      % PLOT Plot the sky chart.
+      %   PLOT(s) plot the skyview when axes limits have changed. Any attached 
+      %   Scope coordinates are also shown (red cross/circle).
+      %
+      %   PLOT(s,'force') force to re-plot the skyview. Any defined list of objects
+      %   is also shown (white X).
       
+      h = [];
       if self.plotting, return; end
       if nargin < 2, force = false; end
       if isempty(self.figure) || ~ishandle(self.figure) || self.figure_insert, force=true; end
@@ -308,6 +298,7 @@ classdef skychart < handle
 
       % when a scope is connected, replot its location
       plot_telescope(self);
+      h = self.figure;
 
       % only plot if the figure was closed, or zoom/visible area has changed
       if ~isempty(self.figure) && (isempty(force) ...
@@ -339,18 +330,40 @@ classdef skychart < handle
     end % plot
     
     function close(self)
-      % close(sc): close skychart
-      if ~isempty(self.timer) && isvalid(self.timer)
-        stop(self.timer); 
+      % CLOSE Close the SkyChart.
+      if isa(self.timer, 'timer') && isvalid(self.timer)
+        stop(self.timer); delete(self.timer);
       end
       if ~isempty(self.figure) && ishandle(self.figure) && ~self.figure_insert, delete(self.figure); end
       self.figure = []; self.axes = []; self.plotting = false;
     end
     
+    function delete(self)
+      % DELETE Delete the SkyChart object.
+      close(self);
+    end % delete
+    
     function found = findobj(self, name)
-      % findobj(sc, name): find a given object in catalogs. Select it.
+      % FINDOBJ Search for an object (star, DSO, planet) in catalogs.
+      %   FINDOBJ(sc, name) search for a given object in catalogs. Select it.
+      %   The found object is returned as a structure.
+      %
+      %   FINDOBJ(sc) opens a Dialogue to enter the nameof an object to search.
       catalogs = fieldnames(self.catalogs);
       found = [];
+      
+      if nargin < 2
+        prompt = { '{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224, Venus.', ...
+          'Use spaces between Catalog Name and ID.', ...
+          'Known Catalogs include: Planets, StarID, HD, HR, Messier, NGC, IC, ...' };
+        name = 'SkyChart: Find Object';
+        options.Resize='on';
+        options.WindowStyle='normal';
+        options.Interpreter='tex';
+        answer=inputdlg(prompt,name, 1, {'M 42'}, options);
+        if ~isempty(answer), name = answer{1}; 
+        else return; end
+      end
       
       % check first for name without separator
       if ~any(name == ' ')
@@ -409,6 +422,15 @@ classdef skychart < handle
         end
         if found.X^2+found.Y^2 < 1
           self.selected = found;
+          if ishandle(self.figure)
+            % center plot on object and replot
+            if isfield(found, 'X') && found.X^2+found.Y^2 < 1
+              figure(self.figure);
+              set(self.axes, 'XLim', [found.X-.1 found.X+.1], ...
+                           'YLim', [found.Y-.1 found.Y+.1]);
+            end
+            plot(self, 1); 
+          end
         else
           disp([ mfilename ': object ' name ' is not visible.' ])
         end
@@ -419,7 +441,7 @@ classdef skychart < handle
     end
     
     function url=help(self)
-      % help(sb): open the Help page
+      % HELP Open the SkyChart Help page.
       url = fullfile('file:///',fileparts(which(mfilename)),'doc','SkyChart.html');
       open_system_browser(url);
     end
@@ -427,61 +449,50 @@ classdef skychart < handle
     % scope methods ------------------------------------------------------------
     
     function connect(self, sb)
-      % connect(sc): connect to a Vixen StarBook scope controller
+      % CONNECT Connect the SkyChart to a scope controller.
       if ~isempty(self.telescope) && isvalid(self.telescope)
         disp([ mfilename ': Scope is already connected.' ])
         plot(self.telescope);
         return
       end
       if nargin > 1
-        self.telescope = sb;
-      elseif nargin == 1 && exist('starbook')
-        sb = [];
-        % we search for any already opened starbook handle
-        h = findall(0, '-regexp', 'Tag','StarBook_','Type','figure');
-        if numel(h) > 1, h=h(1); end
-        if ~isempty(h)
-          ud = get(h, 'UserData');
-          if isstruct(ud) && isfield(ud, 'StarBook')
-            sb = ud.StarBook;
-          end
-        end
-        if isempty(sb)
-          sb = starbook;
-        else
-          disp([ mfilename ': Connecting to already opened ' get(h, 'Tag') ])
-        end
+        disp([ mfilename ': Connecting Scope to SkyChart' ]);
         self.telescope = sb;
       end
     end % connect
     
-    function goto(self, RA, DEC)
-      % goto(sc, ra, dec): send scope to given location
-      %   ra  is given in hh:mm:ss
-      %   dec is given in deg:min
+    function goto(self, varargin)
+      % GOTO Send the scope to given object/coordinates.
+      %   GOTO(sc, ra, dec) send scope to given location
+      %     ra  is given in hh:mm:ss or DEG
+      %     dec is given in deg:min or DEG
+      %
+      %   GOTO(sc) send the scope to the last Selected object, e.g. after a search.
       if nargin ==1
         if isfield(self.selected, 'RA') && isfield(self.selected, 'DEC')
           RA = self.selected.RA;
           DEC= self.selected.DEC;
+          varargin = { self.selected };
         else return; end
       end
-      if ~isempty(self.telescope) && isvalid(self.telescope)
+      if isobject(self.telescope) && isvalid(self.telescope) && ismethod(self.telescope, 'goto')
         % send scope
-        if isfield(self.selected, 'NAME')
-          disp([ mfilename ': GOTO ' self.selected.NAME ])
-        end
-        self.telescope.gotoradec(RA, DEC);
+        self.telescope.goto(varargin{:});
       else
-        disp([ mfilename ': No Scope is Connected yet. Use "connect" first' ]);
+        disp([ mfilename ': No Scope is Connected yet. Use "connect(' inputname(1) ', scope)" first' ]);
       end
     end % goto
     
     % list/planning methods ----------------------------------------------------
     
     function l = listAdd(self, RA, DEC, name)
-      % listAdd(sc): add the last selected object to the List
-      % listAdd(sc, name): search for name and add it to the List
-      % listAdd(sc, RA,DEC, {name}): add RA/DEC to the List
+      % listAdd Add an object to the List of planned observations.
+      %   listAdd(sc) add the last selected object to the List.
+      %
+      %   listAdd(sc, name) search for name and add it to the List.
+      %
+      %   listAdd(sc, RA,DEC, {name}) add RA/DEC (in deg) to the List. 
+      %   The name of the object can optionally be given.
       if nargin > 1
         if ischar(RA)
           self.selected = findobj(self, RA);
@@ -509,7 +520,8 @@ classdef skychart < handle
     end % listAdd
     
     function listClear(self)
-      % listClear(sc): clear the List
+      % listClear Clear the List.
+      %   listClear(sc)
       self.list = [];
       if ishandle(self.figure)
         plot(self, 1);
@@ -517,7 +529,9 @@ classdef skychart < handle
     end % listClear
     
     function l=listShow(self)
-      % listShow(sc): show the current List
+      % listShow Show the current List in a Dialogue window.
+      %   listShow(sc)
+      %   The Dialogue allows to select objects and remove them.
       
       ListString = {};
       for index=1:numel(self.list)
@@ -544,13 +558,16 @@ classdef skychart < handle
     end % listShow
     
     function listRun(self)
-      % listRun(sc): start to execute a list of GOTO's
+      % listRun Start to execute a list of GOTO's.
+      %   listRun(sc)
       self.list_start = true;
     end % listRun
     
     function listPeriod(self, dt)
-      % listPeriod(sc): dialogue to change the List period (sc.list_period in [s]) 
-      % listPeriod(sc, dt): set the List period to dt [s]
+      % listPeriod Open dialogue to change the List period (in [s]) .
+      %   listPeriod(sc) open the dialogue.
+      %
+      %   listPeriod(sc, dt) set the List period to dt [s]
       if nargin > 1
         self.list_period = dt;
       else
@@ -569,11 +586,14 @@ classdef skychart < handle
     end % listPeriod
     
     function l=listGrid(self, RA, DEC, n, da)
-      % listGrid(sc): build a 3x3 grid around selection with step 0.75 deg.
-      % listGrid(sc, RA, DEC, n, da): build a n x n grid around RA/DEC with angular step da
-      % listGrid(sc, name   , n, da): build a n x n grid around named object
+      % listGrid Build a grid of observations around an object for e.g. stitching.  
+      %   listGrid(sc) build a 3x3 grid around selection with step 0.75 deg.
       %
-      %   The grid size can be given as n = [nDEC nRA] to specify a non-square grid
+      %   listGrid(sc, RA, DEC, N, da) build a N x N grid around RA/DEC with angular step da.
+      %
+      %   listGrid(sc, name   , N, da) build a N x N grid around named object.
+      %
+      %   The grid size can be given as N = [nDEC nRA] to specify a non-square grid
       %   as well as similarly for the angular step da = [dDEC dRA]
       %
       %   The angular step should be e.g. the field of view (FOV) in order to 
@@ -585,7 +605,6 @@ classdef skychart < handle
       %     FOV = 0.74 and 1.12 [deg]
       %   With a 400 mm focal length and similar sensor:
       %     FOV = 2.23 and 3.36 [deg]
-      %     
       
       l = [];
       
@@ -634,8 +653,9 @@ classdef skychart < handle
     end % listGrid
     
     function l=grid(self, varargin)
-      % grid: build a grid around current selection
-      l=self.listGrid(self, varargin{:});
+      % GRID Build a grid around current selection.
+      %   GRID(s, ...) is equivalent to listGrid.
+      l=listGrid(self, varargin{:});
     end
    
   end % methods
@@ -644,6 +664,36 @@ end % skychart
 
 % ------------------------------------------------------------------------------
 
+function catalogs = getcatalogs
+  % load catalogs: objects, stars
+  persistent c
+  
+  catalogs = [];
+  
+  if isempty(c)
+    disp([ mfilename ': Welcome ! Loading Catalogs:' ]);
+    
+    c = load(mfilename);
+    
+    % create planet catalog with empty coordinates
+    c.planets = struct('Description','Planets - http://wise-obs.tau.ac.il/~eran/matlab.html','RA',1:9);
+    
+    % display available catalogs
+    for f=fieldnames(c)'
+      name = f{1};
+      if ~isempty(c.(name))
+        num  = numel(c.(name).RA);
+        if isfield(c.(name), 'Description')
+          desc = c.(name).Description;
+        else desc = ''; end
+        disp([ mfilename ': ' name ' with ' num2str(num) ' entries.' ]);
+        disp([ '  ' desc ])
+      end
+    end
+  end
+  catalogs = c;
+end % getcatalogs
+
 function TimerCallback(src, evnt)
   % TimerCallback: executed regularly (5 sec)
   
@@ -651,9 +701,20 @@ function TimerCallback(src, evnt)
   
   if isvalid(sc), 
     % update: compute and plot
-    compute(sc);
-    if ~isempty(sc.figure) && ishandle(sc.figure) && ishandle(sc.axes)
-      plot(sc);
+    sc.update_counter = sc.update_counter + 1;
+    % do we need full update ?
+    if sc.update_counter > sc.update_period % every 10 min
+      sc.update_counter = 0;
+      compute(sc,'force');
+      if ~isempty(sc.figure) && ishandle(sc.figure) && ishandle(sc.axes)
+        plot(sc,1);
+      end
+    else
+      % fast update
+      compute(sc);
+      if ~isempty(sc.figure) && ishandle(sc.figure) && ishandle(sc.axes)
+        plot(sc);
+      end
     end
     
     % look if we are running a list

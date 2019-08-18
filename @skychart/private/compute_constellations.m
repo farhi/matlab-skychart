@@ -1,6 +1,7 @@
-function constellations = compute_constellations(constellations, julianday, place)
+function constellations = compute_constellations(constellations, julianday, place, delta_az)
   % compute_constellations: compute Alt-Az coordinates for constellations
-
+  if nargin <4, delta_az = 0; end
+  
   % compute Alt-Az of constellation lines (pairs)
   [constellations.Lines_Az1, constellations.Lines_Alt1] = radec2altaz( ...
     constellations.Lines_RA1, constellations.Lines_DEC1, ...
@@ -10,8 +11,8 @@ function constellations = compute_constellations(constellations, julianday, plac
     julianday, place);
 
   [constellations.X1, constellations.Y1]     = pr_stereographic_polar( ...
-          constellations.Lines_Az1+90, constellations.Lines_Alt1);
+          constellations.Lines_Az1+90-delta_az, constellations.Lines_Alt1);
   [constellations.X2, constellations.Y2]     = pr_stereographic_polar( ...
-          constellations.Lines_Az2+90, constellations.Lines_Alt2);
+          constellations.Lines_Az2+90-delta_az, constellations.Lines_Alt2);
           
 end % compute_constellations

@@ -4,6 +4,8 @@ function plot_list(self)
   % clean up previous selection
   delete(findobj(self.figure, 'Tag','SkyChart_Selection'));
   
+  delta_az = 0;
+  
   % get current selection
   RA = [];
   DEC= [];
@@ -23,10 +25,9 @@ function plot_list(self)
   if ~isempty(RA)
     % compute Alt-Az and stereographic polar coords
     [Az, Alt] = radec2altaz(RA, DEC, self.julianday, self.place);
-    [X, Y]    = pr_stereographic_polar(Az+90, Alt);
-    % first remove any previous pointer
+    [X, Y]    = pr_stereographic_polar(Az+90-delta_az, Alt);
     
-    % the plot the pointer at selection location
+    % then plot the pointer 'X' at selection location
     plot(X,Y, 'wx', 'MarkerSize', 15, 'Tag','SkyChart_Selection'); 
   end
 end % plot_telescope

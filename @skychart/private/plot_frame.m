@@ -32,6 +32,9 @@ function [sc, new] = plot_frame(sc)
       uimenu(m, 'Label', 'Close',        ...
         'Callback', @MenuCallback, ...
         'Accelerator','w', 'Separator','on');
+    else
+      set(h, 'WindowScrollWheelFcn', @ScrollWheelCallback, ...
+        'CloseRequestFcn',@MenuCallback, 'UserData', sc);
     end
     
     m = uimenu(h, 'Label', 'SkyChart');
@@ -42,11 +45,9 @@ function [sc, new] = plot_frame(sc)
     uimenu(m, 'Label', 'Update To Current Time', ...
       'Callback', @MenuCallback, 'Accelerator','u');
     uimenu(m, 'Label', 'Refresh Plot', ...
-      'Callback', @MenuCallback);
+      'Callback', @MenuCallback, 'Separator','on');
     uimenu(m, 'Label', 'Reset Plot', ...
       'Callback', @MenuCallback);
-    uimenu(m, 'Label', 'Connect to Scope', ...
-      'Callback', @MenuCallback, 'Separator','on');
     uimenu(m, 'Label', 'GOTO Selected Object', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Help', 'Callback', @MenuCallback, 'Separator','on');
@@ -187,25 +188,7 @@ function MenuCallback(src, evnt)
     set(sc.axes, 'XLim', [-1 1], 'YLim', [-1 1]);
   case {'find','find object...'}
     % find an object from its name
-    prompt = {'{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224, Venus. Use spaces between Catalog Name and ID. Known Catalogs include: Planets, StarID, HD, HR, M, NGC, IC, ...'};
-    name = 'SkyChart: Find Object';
-    options.Resize='on';
-    options.WindowStyle='normal';
-    options.Interpreter='tex';
-    answer=inputdlg(prompt,name, 1, {'M 42'}, options);
-    if ~isempty(answer)
-      found = findobj(sc, answer{1});
-      
-      if ~isempty(found) && ishandle(sc.figure)
-        % center plot on object and replot
-        if isfield(found, 'X') && found.X^2+found.Y^2 < 1
-          figure(sc.figure);
-          set(sc.axes, 'XLim', [found.X-.1 found.X+.1], ...
-                       'YLim', [found.Y-.1 found.Y+.1]);
-        end
-        plot(sc, 1); 
-      end
-    end
+    findobj(sc);
   case 'connect to scope'
     % instantiate a mount object
     connect(sc);
