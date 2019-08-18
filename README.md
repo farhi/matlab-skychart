@@ -1,7 +1,8 @@
 # matlab-skychart
 A skychart for Matlab: display the sky view
+Version: 19.08. Download at https://github.com/farhi/matlab-skychart.
 
-![Image of SkyChart](https://github.com/farhi/matlab-skychart/blob/master/doc/SkyChart.png)
+![Image of SkyChart](https://github.com/farhi/matlab-skychart/blob/master/%40skychart/doc/SkyChart.png)
 
 Purpose
 -------
@@ -35,13 +36,13 @@ displays the view at the current UTC and location. The location is obtained from
 
 **Methods:**
 
-- skychart:   create the view
-- date:       set/get the date (UTC)
-- getplace:   get the current GPS location from the network.
-- plot:       plot/replot the view.
-- connect:    connect to a scope controler
-- goto:       send connected scope to selected location
-- findobj:    search for a named object and select it
+- **skychart**:   create the view
+- **date**:       set/get the date (UTC)
+- **getplace**:   get the current GPS location from the network.
+- **plot**:       plot/replot the view.
+- **connect**:    connect to a scope controler
+- **goto**:       send connected scope to selected location
+- **findobj**:    search for a named object and select it
 
 You may force a re-computation and replot of the sky view with:
 
@@ -94,10 +95,11 @@ where 'scope' should be an object with properties/methods:
 - scope.gotoradec(RA,DEC): send the mount to location (RA,DEC)
 - properties: scope.ra.h, scope.ra.min, scope.dec.deg, scope.dec.min
 
-when scope is omitted, a connection with a Vixen StarBook is attempted. This
-controler can be set in 'simulate' mode.
+We recommend for instance the StarBook and StarGo controllers.
 
-Get the StarBook controller for Matlab at https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control. It even works without the physical mount, and then sets itself in 'simulate' mode. A red pointer will then show its current location.
+Get the **Vixen StarBook** controller for Matlab at https://github.com/farhi/matlab-starbook. It even works without the physical mount, and then sets itself in 'simulate' mode. A red pointer will then show its current location.
+
+Get the **Avalon StarGo** controller at https://github.com/farhi/matlab-stargo. It also has a simulate mode, and will show as a red pointer as well. 
 
 Selecting objects and Planning observations
 -------------------------------------------
