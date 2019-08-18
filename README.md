@@ -1,5 +1,5 @@
 # matlab-skychart
-A skychart for Matlab: display the sky view
+A skychart for Matlab: display the sky view.
 Version: 19.08. Download at https://github.com/farhi/matlab-skychart.
 
 ![Image of SkyChart](https://github.com/farhi/matlab-skychart/blob/master/%40skychart/doc/SkyChart.png)
@@ -207,5 +207,6 @@ Credits
 - Amazing work from Eran O. Ofek (MAAT). URL : http://weizmann.ac.il/home/eofek/matlab/
 - Stars (~46000) data base from http://astrosci.scimuze.com/stellar_data.htm
 - deep sky objects (~13000) from http://klima-luft.de/steinicke/ngcic/ngcic_e.htm
-- https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control
+- Vixen StarBook controller for Matlab at https://github.com/farhi/matlab-starbook.
+- Avalon StarGo controller at https://github.com/farhi/matlab-stargo.
 

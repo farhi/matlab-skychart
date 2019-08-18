@@ -1,6 +1,9 @@
 classdef skychart < handle
-  % SKYCHART: a class to plot a sky chart with stars/objects
+  % SKYCHART: a class to plot a sky chart with stars/objects.
+  % Version: 19.08. Download at https://github.com/farhi/matlab-skychart.
   %
+  % Purpose
+  % =======
   % This class computes and plots the sky seen at given location and time. About
   % 43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
   % Moon and 7 planets. The actual number of rendered objects depends on the zoom 
@@ -10,6 +13,8 @@ classdef skychart < handle
   % use the drag tool to move the visible area. Right-click shows a contextual
   % menu with the under-lying object properties (coordinates, type, ...).
   %
+  % Usage
+  % =====
   % To use this code, type
   %
   % >> sc = skychart
@@ -18,7 +23,8 @@ classdef skychart < handle
   %
   % >> sc.place=[ 10 -40 ]; compute(sc,'force'); plot(sc, 1);
   %
-  % Methods (main):
+  % Methods (main)
+  % ==============
   %   skychart:   create the view
   %   date:       set/get the date (UTC)
   %   getplace:   get the current GPS location from the network
@@ -33,7 +39,7 @@ classdef skychart < handle
   % >> plot(sc, 1)
   %
   % Connecting to a Scope
-  %
+  % =====================
   % You may connect to a telescope mount using e.g.
   %
   % >> connect(sc, scope)
@@ -66,7 +72,8 @@ classdef skychart < handle
   %   https://fr.mathworks.com/matlabcentral/fileexchange/22295-local-time-to-utc
   % Stars (~46000) data base  from http://astrosci.scimuze.com/stellar_data.htm
   % Deep sky objects (~13000) from http://klima-luft.de/steinicke/ngcic/ngcic_e.htm
-  % StarBook (Vixen) https://fr.mathworks.com/matlabcentral/fileexchange/65944-vixen-starbook-control
+  % Vixen StarBook controller for Matlab at https://github.com/farhi/matlab-starbook.
+  % Avalon StarGo controller at https://github.com/farhi/matlab-stargo.
 
   
   properties
