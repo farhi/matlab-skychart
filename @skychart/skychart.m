@@ -353,9 +353,9 @@ classdef skychart < handle
       found = [];
       
       if nargin < 2
-        prompt = { '{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224, Venus.', ...
+        prompt = { [ '{\color{blue}Enter a Star/Object Name} e.g. Betelgeuse, M 42, NGC 224, Venus.', ...
           'Use spaces between Catalog Name and ID.', ...
-          'Known Catalogs include: Planets, StarID, HD, HR, Messier, NGC, IC, ...' };
+          'Known Catalogs include: Planets, StarID, HD, HR, Messier, NGC, IC, ...' ] };
         name = 'SkyChart: Find Object';
         options.Resize='on';
         options.WindowStyle='normal';
