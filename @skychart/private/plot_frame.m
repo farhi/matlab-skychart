@@ -46,6 +46,10 @@ function [sc, new] = plot_frame(sc)
       'Callback', @MenuCallback, 'Accelerator','u');
     uimenu(m, 'Label', 'Refresh Plot', ...
       'Callback', @MenuCallback, 'Separator','on');
+    uimenu(m, 'Label', 'Zoom on', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Zoom off', ...
+      'Callback', @MenuCallback);
     uimenu(m, 'Label', 'Reset Plot', ...
       'Callback', @MenuCallback);
     uimenu(m, 'Label', 'GOTO Selected Object', ...
@@ -112,6 +116,20 @@ function [sc, new] = plot_frame(sc)
     % bound listeners for gca:xlim/ylim and figure:resize actions
     propListener = addlistener(gca,'XLim','PostSet',@axesLimitsCallback);
     propListener = addlistener(gca,'YLim','PostSet',@axesLimitsCallback);
+    
+    % attach contextual menu for update, zoom on/off, reset, find, goto
+    m = uicontextmenu('Parent', sc.figure);
+    uimenu(m, 'Label', 'Update', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Zoom on', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Reset Plot', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Find Object...', ...
+      'Callback', @MenuCallback);
+    uimenu(m, 'Label', 'Goto Object...', ...
+      'Callback', @MenuCallback);
+    set(sc.axes, 'UIContextMenu', m);
     
     % start the update timer (when replotting after creation)
     if ~isempty(sc.timer) && isvalid(sc.timer) && strcmp(sc.timer.Running, 'off')
@@ -194,6 +212,9 @@ function MenuCallback(src, evnt)
     connect(sc);
   case {'send scope to selected object','goto selected object'}
     goto(sc);
+  case 'goto object...'
+    found=findobj(sc);
+    if ~isempty(found) goto(sc, found); end
   case 'close'
     close(sc);
   case 'add selected object'
@@ -241,6 +262,8 @@ function MenuCallback(src, evnt)
     help(sc);
   case 'set period...'
     listPeriod(sc);
+  case 'zoom on'
+    zoom(sc.figure, 'on');
   end
 end % MenuCallback
 
