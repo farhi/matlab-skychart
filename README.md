@@ -5,12 +5,12 @@ Version: 19.08. Download at https://github.com/farhi/matlab-skychart.
 ![Image of SkyChart](https://github.com/farhi/matlab-skychart/blob/master/%40skychart/doc/SkyChart.png)
 
 Purpose
--------
+=======
 
 **SKYCHART** a class to plot a sky chart with stars/objects
  
 This class computes and plots the sky seen at given location and time. About
-43000 stars and 13000 deep sky objects are considered, as well as the Sun, the 
+100000 stars and 200000 deep sky objects are considered, as well as the Sun, the 
 Moon and 7 planets. The actual number of rendered objects depends on the zoom 
 level in the sky chart.
 
@@ -18,8 +18,18 @@ You may zoom the plot using the Zoom tool (in the Toolbar). You may as well
 use the drag/pan tool to move the visible area. Right-click shows a contextual
 menu with the under-lying object properties (coordinates, type, ...).
 
-Usage
------
+Table of Contents
+- [Syntax/Usage](#syntax-usage)
+- [Methods](#methods)
+- [The Chart view](#view)
+- [Connecting to a Scope](#connecting)
+- [Selecting objects and Planning observations](#selecting-planning)
+- [Examples](#examples)
+- [Installation](#installation)
+- [Credits](#credits)
+
+Usage <a id=syntax-usage></a>
+=====
 
 To use this code, type:
 
@@ -34,7 +44,8 @@ displays the view at the current UTC and location. The location is obtained from
 >> compute(sc,'force'); plot(sc,1);
 ```
 
-**Methods:**
+Methods <a id=methods></a>
+=======
 
 - **skychart**:   create the view
 - **date**:       set/get the date (UTC)
@@ -53,8 +64,8 @@ You may force a re-computation and replot of the sky view with:
 
 or use the "SkyChart/Replot" menu item.
 
-The Chart view
---------------
+The Chart view <a id=view></a>
+==============
 
 As seen above, the Chart view represent the visible sky, with stars and deep sky objects. The actual number of visible objects adapts to the zoom level (use the Zoom +/- tool from the tool bar, or the mouse wheel).
 
@@ -80,8 +91,8 @@ The plot can be closed without loosing its information, and re-opened/updated wi
 
 The plot auto-updates on zoom and pan tools, as well as with Selections (see below).
 
-Connecting to a Scope
----------------------
+Connecting to a Scope <a id=connecting></a>
+=====================
 
 You may connect to a telescope mount using e.g.
 
@@ -101,8 +112,8 @@ Get the **Vixen StarBook** controller for Matlab at https://github.com/farhi/mat
 
 Get the **Avalon StarGo** controller at https://github.com/farhi/matlab-stargo. It also has a simulate mode, and will show as a red pointer as well. 
 
-Selecting objects and Planning observations
--------------------------------------------
+Selecting objects and Planning observations <a id=selecting-planning></a>
+===========================================
 
 Clicking on any visible object on the chart selects it. Right-click shows a contextual menu allowing, when connected, to send the mount immediately to this object (requires a mount controller such as the StarBook - see above). All coordinates (RA, DEC, Alt, Az) are given in degrees.
 
@@ -179,8 +190,8 @@ Then start the Planning with the "Planning/Start" menu entry, which can also be 
 
 which can be doubled to pause the execution.
 
-Requirements/Installation
--------------------------
+Requirements/Installation <a id=installation></a>
+=========================
 
 Matlab, no external toolbox.
 Just copy the files and go into the directory. Then type commands above.
@@ -199,8 +210,8 @@ com.mathworks.mlwidgets.html.HTMLPrefs.setProxyPort(num2str(ProxyPort));
 ```
 The default GPS location will be used otherwise, and can be changed from the SkyChart menu.
 
-Credits
--------
+Credits <a id=credits></a>
+=======
 
 - Local Time to UTC from https://fr.mathworks.com/matlabcentral/fileexchange/22295-local-time-to-utc
 - Parse JSON from https://fr.mathworks.com/matlabcentral/fileexchange/23393--another--json-parser
@@ -210,3 +221,4 @@ Credits
 - Vixen StarBook controller for Matlab at https://github.com/farhi/matlab-starbook.
 - Avalon StarGo controller at https://github.com/farhi/matlab-stargo.
 
+(c) E. Farhi, 2019. GPL2.
