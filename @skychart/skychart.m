@@ -282,6 +282,8 @@ classdef skychart < handle
       %
       %   PLOT(s,'force') force to re-plot the skyview. Any defined list of objects
       %   is also shown (white X).
+      %
+      %   You may add more marks on the SkyChart plot using SCATTER(s,RA,DEC).
       
       h = [];
       if self.plotting, return; end
@@ -328,6 +330,43 @@ classdef skychart < handle
       self.plotting = false;
       
     end % plot
+    
+    function h=scatter(self, RA, DEC, varargin)
+      % SCATTER Display RA/DEC coordinates on the SkyChart plot.
+      %   h=SCATTER(s, 'HH:MM:SS','DD:MM:SS') plot a symbol at given RA/DEC coords
+      %   and return a handle to it.
+      %
+      %   h=SCATTER(s, RA, DEC) does the same for RA and DEC given as vectors in [deg].
+      %   h=SCATTER(s, ..., 'prop','value'...) uses given Property/Values pairs
+      %   for the plot.
+      h = [];
+      if nargin < 3, return; end
+      if ischar(RA)
+        RA = convertdms(RA,'H','r')*180/pi;
+      end
+      if ischar(DEC)
+        DEC = convertdms(DEC,'D','R')*180/pi;
+      end
+      if isnumeric(RA) && isnumeric(DEC) && ~isempty(RA)
+        delta_az = 0;
+        [Az, Alt] = radec2altaz(RA, DEC, self.julianday, self.place);
+        [X, Y]    = pr_stereographic_polar(Az+90-delta_az, Alt);
+        
+        % then plot the pointer 'X' at selection location
+        if ~isempty(self.figure) && ishandle(self.figure)
+          set(self.figure, 'HandleVisibility','on');
+          set(0,'CurrentFigure', self.figure);
+          hold on
+          if isempty(varargin)
+            h = plot(self.axes, X,Y, 'c+', 'MarkerSize', 15); 
+          else
+            h = plot(self.axes, X,Y, varargin{:});
+          end 
+          hold off;
+          set(self.figure, 'HandleVisibility','off');
+        end
+      end
+    end % scatter
     
     function close(self)
       % CLOSE Close the SkyChart.
