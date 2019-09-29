@@ -275,6 +275,11 @@ classdef skychart < handle
       ret = self.update_time;
     end % compute
     
+    function c = get_catalogs(self)
+      % GET_CATALOGS Get the loaded catalogs
+      c = self.catalogs;
+    end
+    
     function h = plot(self, force)
       % PLOT Plot the sky chart.
       %   PLOT(s) plot the skyview when axes limits have changed. Any attached 
